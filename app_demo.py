@@ -38,9 +38,24 @@ if 'verifying' not in st.session_state:
 if 'temp_user' not in st.session_state:
     st.session_state['temp_user'] = None
 
+# --- FONCTION PDF ---
+def generer_pdf(nom, nature, montant, ref):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=letter)
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(300, 750, "REÇU OFFICIEL - KIKÉ SARÉ")
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 700, f"Date : {datetime.now().strftime('%d/%m/%Y')}")
+    c.drawString(100, 680, f"Client : {nom}")
+    c.drawString(100, 660, f"Nature : {nature}")
+    c.drawString(100, 640, f"Montant : {montant:,} GNF")
+    c.save()
+    buf.seek(0)
+    return buf
+
 # --- INTERFACE AUTHENTIFICATION ---
 def auth_page():
-    st.markdown("<h1 style='text-align: center;'>🔐 Portail Kiké Saré</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>🇬🇳 Bienvenue sur Kiké Saré</h1>", unsafe_allow_html=True)
     
     # Étape de vérification par code (Simulation SMS/Mail)
     if st.session_state['verifying']:
@@ -101,9 +116,15 @@ def main_app():
             st.session_state['connected'] = False
             st.rerun()
     
-    st.header("Effectuer un paiement")
-    # ... (Le reste du code de paiement et PDF reste identique) ...
-    st.info("Interface de paiement active pour l'utilisateur vérifié.")
+   st.header("Effectuer un paiement")
+    with st.form("pay"):
+        nat = st.selectbox("Nature", ["Loyer", "Scolarité", "EDG/SEG"])
+        mt = st.number_input("Montant (GNF)", min_value=0)
+        ref = st.text_input("Référence")
+        if st.form_submit_button("Valider"):
+            st.success("Paiement validé !")
+            pdf = generer_pdf(st.session_state['user_info']['full_name'], nat, mt, ref)
+            st.download_button("📥 Télécharger le Reçu", pdf, f"recu_{ref}.pdf", "application/pdf")
 
 # --- LANCEMENT ---
 if not st.session_state['connected']:
