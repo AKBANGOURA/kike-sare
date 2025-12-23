@@ -1,99 +1,132 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Kiké Saré - Gestion de Paiements", layout="wide")
+st.set_page_config(page_title="Kiké Saré - Officiel", layout="wide", page_icon="🇬🇳")
 
-# --- STYLE PERSONNALISÉ ---
-st.markdown("""
-    <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
-    .stHeader { color: #1E3A8A; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- SIMULATION DE BASE DE DONNÉES (Session State) ---
+# --- INITIALISATION DES VARIABLES DE SESSION ---
+if 'connected' not in st.session_state:
+    st.session_state['connected'] = False
 if 'transactions' not in st.session_state:
     st.session_state['transactions'] = []
 
-# --- BARRE LATÉRALE (SIDEBAR) ---
-with st.sidebar:
-    st.title("🇬🇳 Kiké Saré")
-    st.write(f"**Connecté :** Almamy BANGOURA")
-    st.divider()
-    page = st.radio("Menu", ["📱 Mon Portail", "📊 Admin", "⚙️ Paramètres"])
-    st.divider()
-    if st.button("Déconnexion"):
-        st.info("Déconnexion réussie")
-
-# --- LOGIQUE DES PAGES ---
-
-# PAGE 1 : PORTAIL UTILISATEUR
-if page == "📱 Mon Portail":
-    st.title("Effectuer un paiement")
+# --- FONCTION GÉNÉRATION PDF ---
+def generer_pdf(nom, nature, montant, ref):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=letter)
+    # Entête
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(300, 750, "REÇU DE PAIEMENT - KIKÉ SARÉ")
+    c.line(100, 740, 500, 740)
     
-    col1, col2 = st.columns([2, 1])
+    # Détails
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 700, f"Date et Heure : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    c.drawString(100, 680, f"Bénéficiaire : {nom}")
+    c.drawString(100, 660, f"Nature du règlement : {nature}")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(100, 640, f"Montant payé : {montant:,} GNF")
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 620, f"Référence de transaction : {ref}")
     
-    with col1:
-        with st.form("form_paiement", clear_on_submit=True):
-            st.subheader("Nouveau Règlement")
-            nature = st.selectbox("Nature du paiement", 
-                                ["Loyer Mensuel", "Frais de Scolarité", "Facture EDG/SEG", "Transport", "Autre"])
-            montant = st.number_input("Montant (GNF)", min_value=0, step=5000)
-            reference = st.text_input("Référence de la transaction (ex: N° Reçu)")
-            commentaire = st.text_area("Notes additionnelles")
+    # Pied de page
+    c.setFont("Helvetica-Oblique", 9)
+    c.drawString(100, 550, "Ce document fait office de preuve de paiement officielle via la plateforme Kiké Saré.")
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    return buf
+
+# --- SYSTÈME D'AUTHENTIFICATION ---
+def login_page():
+    st.markdown("<h1 style='text-align: center;'>🔐 Connexion Kiké Saré</h1>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("login_form"):
+            user = st.text_input("Identifiant (Prénom)")
+            password = st.text_input("Mot de passe", type="password")
+            submit_login = st.form_submit_button("Se connecter")
             
-            submit = st.form_submit_button("Confirmer le paiement")
-            
-            if submit:
-                if montant > 0 and reference:
-                    # Enregistrement de la transaction
+            if submit_login:
+                if user.lower() == "almamy" and password == "Guinee2025":
+                    st.session_state['connected'] = True
+                    st.session_state['user_full_name'] = "Almamy BANGOURA"
+                    st.rerun()
+                else:
+                    st.error("Identifiants incorrects. Veuillez réessayer.")
+
+# --- APPLICATION PRINCIPALE ---
+def main_app():
+    # Barre latérale
+    with st.sidebar:
+        st.title("🇬🇳 Kiké Saré")
+        st.write(f"👤 **{st.session_state['user_full_name']}**")
+        st.divider()
+        menu = st.radio("Navigation", ["📱 Effectuer un paiement", "📊 Historique & Admin"])
+        st.divider()
+        if st.button("🚪 Déconnexion"):
+            st.session_state['connected'] = False
+            st.rerun()
+
+    # Page de Paiement
+    if menu == "📱 Effectuer un paiement":
+        st.title("Effectuer un paiement")
+        
+        col_form, col_info = st.columns([2, 1])
+        
+        with col_form:
+            with st.form("pay_form", clear_on_submit=False):
+                nature = st.selectbox("Type de paiement", ["Loyer", "Scolarité", "Facture EDG/SEG", "Autre"])
+                montant = st.number_input("Montant (GNF)", min_value=1000, step=5000)
+                ref = st.text_input("Référence du paiement (ex: Mois ou N° Facture)")
+                valider = st.form_submit_button("Valider la transaction")
+
+            if valider:
+                if ref:
+                    # Sauvegarde locale
                     nouvelle_trans = {
-                        "Date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                        "Date": datetime.now().strftime("%d/%m/%Y"),
                         "Nature": nature,
                         "Montant": montant,
-                        "Réf": reference,
-                        "Statut": "Validé"
+                        "Référence": ref
                     }
                     st.session_state['transactions'].append(nouvelle_trans)
-                    st.success(f"✅ Paiement de {montant:,} GNF enregistré avec succès !")
+                    
+                    st.success("✅ Paiement enregistré !")
+                    
+                    # Préparation du Reçu
+                    pdf = generer_pdf(st.session_state['user_full_name'], nature, montant, ref)
+                    st.download_button(
+                        label="📥 Télécharger mon reçu PDF",
+                        data=pdf,
+                        file_name=f"recu_kikesare_{ref}.pdf",
+                        mime="application/pdf"
+                    )
                     st.balloons()
                 else:
-                    st.error("Veuillez remplir le montant et la référence.")
+                    st.warning("Veuillez saisir une référence.")
 
-    with col2:
-        st.subheader("Dernière activité")
-        if st.session_state['transactions']:
-            df = pd.DataFrame(st.session_state['transactions']).tail(3)
-            st.table(df[['Date', 'Nature', 'Montant']])
+        with col_info:
+            st.info("""
+            **Note aux testeurs :** Chaque transaction génère un reçu unique. Assurez-vous de télécharger votre reçu immédiatement après la validation.
+            """)
+
+    # Page Admin / Historique
+    elif menu == "📊 Historique & Admin":
+        st.title("Tableau de bord")
+        if not st.session_state['transactions']:
+            st.write("Aucune transaction effectuée pour le moment.")
         else:
-            st.info("Aucune transaction récente.")
+            df = pd.DataFrame(st.session_state['transactions'])
+            st.metric("Total des encaissements", f"{df['Montant'].sum():,} GNF")
+            st.dataframe(df, use_container_width=True)
 
-# PAGE 2 : ADMINISTRATION
-elif page == "📊 Admin":
-    st.title("Tableau de Bord Admin")
-    
-    if not st.session_state['transactions']:
-        st.warning("Aucune donnée disponible pour le moment.")
-    else:
-        df_all = pd.DataFrame(st.session_state['transactions'])
-        
-        # Statistiques rapides
-        total_gnf = df_all['Montant'].sum()
-        st.metric("Total Collecté", f"{total_gnf:,} GNF")
-        
-        st.subheader("Historique Complet")
-        st.dataframe(df_all, use_container_width=True)
-        
-        # Bouton export
-        csv = df_all.to_csv(index=False).encode('utf-8')
-        st.download_button("Télécharger l'historique (CSV)", csv, "export_kike_sare.csv", "text/csv")
-
-# PAGE 3 : PARAMÈTRES
+# --- LANCEMENT ---
+if not st.session_state['connected']:
+    login_page()
 else:
-    st.title("Paramètres du compte")
-    st.write("Gérez vos notifications et vos préférences de sécurité.")
-    st.checkbox("Recevoir un rappel par SMS avant l'échéance")
-    st.checkbox("Générer automatiquement un reçu PDF")
+    main_app()
