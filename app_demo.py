@@ -38,20 +38,7 @@ if 'verifying' not in st.session_state:
 if 'temp_user' not in st.session_state:
     st.session_state['temp_user'] = None
 
-# --- FONCTION PDF ---
-def generer_pdf(nom, nature, montant, ref):
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=letter)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(300, 750, "REÇU OFFICIEL - KIKÉ SARÉ")
-    c.setFont("Helvetica", 12)
-    c.drawString(100, 700, f"Date : {datetime.now().strftime('%d/%m/%Y')}")
-    c.drawString(100, 680, f"Client : {nom}")
-    c.drawString(100, 660, f"Nature : {nature}")
-    c.drawString(100, 640, f"Montant : {montant:,} GNF")
-    c.save()
-    buf.seek(0)
-    return buf
+
 
 # --- INTERFACE AUTHENTIFICATION ---
 def auth_page():
