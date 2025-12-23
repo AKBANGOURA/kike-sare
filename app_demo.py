@@ -116,15 +116,32 @@ def main_app():
             st.session_state['connected'] = False
             st.rerun()
     
-   st.header("Effectuer un paiement")
-    with st.form("pay"):
-        nat = st.selectbox("Nature", ["Loyer", "Scolarité", "EDG/SEG"])
-        mt = st.number_input("Montant (GNF)", min_value=0)
-        ref = st.text_input("Référence")
-        if st.form_submit_button("Valider"):
-            st.success("Paiement validé !")
-            pdf = generer_pdf(st.session_state['user_info']['full_name'], nat, mt, ref)
-            st.download_button("📥 Télécharger le Reçu", pdf, f"recu_{ref}.pdf", "application/pdf")
+st.header("Effectuer un paiement")
+
+with st.form("pay"):
+    nat = st.selectbox("Nature", ["Loyer", "Scolarité", "EDG/SEG"])
+    mt = st.number_input("Montant (GNF)", min_value=0)
+    ref = st.text_input("Référence")
+    submit = st.form_submit_button("Valider")
+
+# On gère l'action APRÈS le formulaire pour que le bouton de téléchargement reste visible
+if submit:
+    if mt > 0 and ref:
+        st.success("✅ Paiement validé !")
+        
+        # Génération du PDF
+        pdf = generer_pdf(st.session_state['user_info']['full_name'], nat, mt, ref)
+        
+        # Affichage du bouton de téléchargement
+        st.download_button(
+            label="📥 Télécharger le Reçu",
+            data=pdf,
+            file_name=f"recu_{ref}.pdf",
+            mime="application/pdf"
+        )
+        st.balloons()
+    else:
+        st.error("Veuillez entrer un montant supérieur à 0 et une référence.")
 
 # --- LANCEMENT ---
 if not st.session_state['connected']:
