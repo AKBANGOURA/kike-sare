@@ -53,7 +53,7 @@ if 'verifying' not in st.session_state:
 
 # --- INTERFACE AUTHENTIFICATION ---
 if not st.session_state['connected']:
-    st.markdown("<h1 style='text-align: center;'>🔐 Portail Kiké Saré</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>🇬🇳 Bienvenue sur Kiké Saré</h1>", unsafe_allow_html=True)
     
     if st.session_state['verifying']:
         st.info("📩 Un code de validation (123456) a été envoyé.")
