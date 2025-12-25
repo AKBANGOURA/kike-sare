@@ -43,7 +43,7 @@ if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 # --- 4. ACCÈS : CONNEXION & INSCRIPTION ---
 if not st.session_state['connected']:
     st.markdown("<h1 style='text-align:center; color:#ce1126;'>KIKÉ SARÉ</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#009460; font-weight:bold;'>Payez vos mensualités en toute sécurité</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#009460; font-weight:bold;'>Payez vos mensualités en toute sécurité !</p>", unsafe_allow_html=True)
     
     if st.session_state['verifying']:
         # ÉCRAN DE VÉRIFICATION
@@ -82,7 +82,7 @@ if not st.session_state['connected']:
                 else: st.error("Identifiants incorrects ou compte non vérifié.")
 
         with tab2:
-            u_role = st.radio("Vous souhaitez créer un compte :", ["Particulier", "Entrepreneur (Entreprise/Commerce)"], horizontal=True)
+            u_role = st.radio("Vous souhaitez créer un compte :", ["Particulier", "Entrepreneur"], horizontal=True)
             
             with st.form("inscription_form"):
                 if u_role == "Particulier":
@@ -91,7 +91,7 @@ if not st.session_state['connected']:
                     nom_final = f"{prenom} {nom}"
                     siret_val = ""
                 else:
-                    nom_final = st.text_input("Nom de l'Entreprise / Commerce")
+                    nom_final = st.text_input("Nom de l'Etablissement / Entreprise / Commerce")
                     siret_val = st.text_input("Numéro SIRET / RCCM")
                 
                 email_ins = st.text_input("Votre Email (pour validation)")
