@@ -4,7 +4,7 @@ import random
 import smtplib
 from email.message import EmailMessage
 
-# --- CONFIGURATION DE LA PAGE (Icône du navigateur) ---
+# --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Kiké Saré", page_icon="☀️", layout="centered")
 
 # --- 1. CONFIGURATION MAIL ---
@@ -24,7 +24,7 @@ def send_validation_mail(receiver, code):
         return True
     except Exception: return False
 
-# --- 2. INITIALISATION ET RÉPARATION DE LA BASE ---
+# --- 2. BASE DE DONNÉES ---
 def init_db():
     conn = sqlite3.connect('kikesare.db', check_same_thread=False)
     c = conn.cursor()
@@ -33,8 +33,7 @@ def init_db():
     try:
         c.execute("ALTER TABLE users ADD COLUMN siret TEXT")
     except sqlite3.OperationalError: pass
-    conn.commit()
-    conn.close()
+    conn.commit(); conn.close()
 
 init_db()
 
@@ -42,18 +41,21 @@ init_db()
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. AFFICHAGE DU LOGO ET TITRE ---
+# --- 4. AFFICHAGE DU LOGO RÉEL ---
 def display_header():
-    # Simulation visuelle du logo Soleil + Billets avec du HTML/CSS
-    st.markdown("""
+    # URL d'un logo illustratif (Soleil + Argent) - Vous pourrez la remplacer par votre propre lien GitHub
+    logo_url = "https://img.icons8.com/external-flatart-icons-flat-flatarticons/128/external-sun-energy-flatart-icons-flat-flatarticons.png"
+    
+    st.markdown(f"""
         <div style='text-align: center;'>
-            <div style='font-size: 70px;'>☀️💸</div>
-            <h1 style='color:#ce1126; margin-bottom:0;'>KIKÉ SARÉ</h1>
+            <img src='{logo_url}' width='120'>
+            <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KIKÉ SARÉ</h1>
             <p style='color:#009460; font-weight:bold; font-size:18px;'>Payez vos mensualités en toute sécurité !</p>
+            <hr style='border: 1px solid #f0f2f6;'>
         </div>
     """, unsafe_allow_html=True)
 
-# --- 5. ACCÈS : CONNEXION & INSCRIPTION ---
+# --- 5. LOGIQUE D'ACCÈS ---
 if not st.session_state['connected']:
     display_header()
     
@@ -80,8 +82,8 @@ if not st.session_state['connected']:
     else:
         tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
         with tab1:
-            e_log = st.text_input("Email", key="login_email")
-            p_log = st.text_input("Mot de passe", type="password", key="login_pwd")
+            e_log = st.text_input("Email", key="l_email")
+            p_log = st.text_input("Mot de passe", type="password", key="l_pwd")
             if st.button("Se connecter"):
                 conn = sqlite3.connect('kikesare.db')
                 u = conn.execute("SELECT * FROM users WHERE id=? AND pwd=? AND verified=1", (e_log, p_log)).fetchone()
@@ -93,30 +95,30 @@ if not st.session_state['connected']:
 
         with tab2:
             u_role = st.radio("Type de compte :", ["Particulier", "Entrepreneur"], horizontal=True)
-            with st.form("inscription_form"):
+            with st.form("ins_form"):
                 if u_role == "Particulier":
                     nom_f = f"{st.text_input('Prénom')} {st.text_input('Nom')}"
-                    siret_val = ""
+                    s_v = ""
                 else:
-                    nom_f = st.text_input("Nom de l'Etablissement / Entreprise")
-                    siret_val = st.text_input("Numéro SIRET / RCCM")
+                    nom_f = st.text_input("Nom de l'Etablissement")
+                    s_v = st.text_input("N° SIRET / RCCM")
                 
-                email_ins = st.text_input("Email")
+                em = st.text_input("Email de validation")
                 p1 = st.text_input("Mot de passe", type="password")
-                p2 = st.text_input("Confirmez le mot de passe", type="password")
+                p2 = st.text_input("Confirmez", type="password")
                 
                 if st.form_submit_button("🚀 Recevoir le code"):
-                    if p1 == p2 and len(p1) >= 6 and email_ins:
+                    if p1 == p2 and len(p1) >= 6 and em:
                         code = random.randint(100000, 999999)
-                        if send_validation_mail(email_ins, code):
-                            st.session_state.update({'temp_id': email_ins, 'temp_pwd': p1, 'temp_name': nom_f, 'temp_type': u_role, 'temp_siret': siret_val, 'correct_code': code, 'verifying': True})
+                        if send_validation_mail(em, code):
+                            st.session_state.update({'temp_id': em, 'temp_pwd': p1, 'temp_name': nom_f, 'temp_type': u_role, 'temp_siret': s_v, 'correct_code': code, 'verifying': True})
                             st.rerun()
-                        else: st.error("Erreur d'envoi mail.")
+                        else: st.error("Erreur SMTP.")
 
 # --- 6. ESPACES UTILISATEURS ---
 else:
     with st.sidebar:
-        st.markdown("<h2 style='text-align:center;'>☀️💸</h2>", unsafe_allow_html=True)
+        st.image("https://img.icons8.com/external-flatart-icons-flat-flatarticons/64/external-sun-energy-flatart-icons-flat-flatarticons.png")
         st.write(f"### {st.session_state['user_name']}")
         if st.button("🔌 Déconnexion"): st.session_state['connected'] = False; st.rerun()
 
@@ -126,7 +128,7 @@ else:
         with t_pay:
             col_a, col_b = st.columns(2)
             with col_a:
-                service = st.selectbox("Service", ["🎓 Scolarité", "🏠 Loyer", "💡 Facture", "🛍️ Achat"])
+                service = st.selectbox("Payer pour :", ["🎓 Scolarité", "🏠 Loyer", "💡 Facture", "🛍️ Achat"])
                 ref = st.text_input("Référence")
                 montant = st.number_input("Montant (GNF)", min_value=1000)
             with col_b:
@@ -134,22 +136,13 @@ else:
                 if moyen == "Carte Visa":
                     st.text_input("💳 N° Carte")
                     c1, c2 = st.columns(2)
-                    c1.text_input("📅 MM/AA")
+                    c1.text_input("📅 Expiration")
                     c2.text_input("🔒 CVV", type="password")
                 else:
                     st.text_input("📱 Numéro", placeholder="622...")
-                modalite = st.selectbox("Modalité", ["Comptant", "2 fois", "3 fois"])
+                st.selectbox("Modalité", ["Comptant", "2 fois", "3 fois"])
             if st.button("💎 Valider"):
                 st.balloons(); st.success("Paiement validé !")
-
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
-        t1, t2 = st.tabs(["📈 Revenus", "💰 Réception"])
-        with t1:
-            st.metric("Total encaissé", "0 GNF")
-            st.info("Aucune transaction pour le moment.")
-        with t2:
-            with st.form("rec"):
-                st.selectbox("Canal", ["Orange Money Business", "MTN MoMo Business", "Banque"])
-                st.text_input("Numéro/RIB")
-                if st.form_submit_button("💾 Enregistrer"): st.success("Mis à jour.")
+        st.metric("Total encaissé", "0 GNF")
