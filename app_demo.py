@@ -6,48 +6,50 @@ import random
 import time
 from datetime import datetime, timedelta
 
-# --- 1. CONFIGURATION & STYLE CSS ---
-st.set_page_config(page_title="Kiké Saré - Officiel", layout="wide", page_icon="🇬🇳")
+# --- 1. CONFIGURATION & STYLE ---
+st.set_page_config(page_title="Kiké Saré - Business Pro", layout="wide", page_icon="🇬🇳")
 
-# Ajout de style personnalisé pour les boutons et les titres
 st.markdown("""
     <style>
-    .main { background-color: #f9f9f9; }
+    .stApp { background-color: #ffffff; }
+    .main-title { color: #ce1126; font-size: 40px; font-weight: bold; text-align: center; margin-bottom: 0px; }
+    .sub-title { color: #009460; text-align: center; margin-bottom: 30px; font-style: italic; }
     .stButton>button {
-        background-color: #ce1126; /* Rouge Guinée */
-        color: white;
-        border-radius: 10px;
-        border: none;
-        height: 3em;
-        width: 100%;
+        background-color: #ce1126; color: white; border-radius: 8px;
+        height: 3em; width: 100%; border: none; font-weight: bold;
     }
-    .stButton>button:hover { background-color: #fcd116; color: black; } /* Jaune Guinée */
-    .success-text { color: #009460; font-weight: bold; } /* Vert Guinée */
+    .stButton>button:hover { background-color: #fcd116; color: black; }
+    .history-card { padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. BASE DE DONNÉES (VERSION STABLE) ---
+# --- 2. BASE DE DONNÉES (LOGIQUE IMMUABLE + HISTORIQUE) ---
 def get_db_connection():
     return sqlite3.connect('kikesare.db', check_same_thread=False)
 
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
+    # Table Utilisateurs
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, verified INTEGER)''')
+    # Table Échéances (Paiements futurs / BNPL)
     c.execute('''CREATE TABLE IF NOT EXISTS echeances 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, date_limite DATE, montant REAL)''')
+    # NOUVELLE TABLE : Historique des paiements effectués
+    c.execute('''CREATE TABLE IF NOT EXISTS historique 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, montant REAL, date_paiement DATETIME, moyen TEXT, reference TEXT)''')
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- 3. ENVOI DE MAIL RÉEL ---
+# --- 3. FONCTIONS SYSTÈME ---
 def envoyer_code_validation(destinataire, code):
     try:
         expediteur = st.secrets["EMAIL_USER"]
         mdp = st.secrets["EMAIL_PASSWORD"]
-        msg = MIMEText(f"Votre code de sécurité Kiké Saré est : {code}")
+        msg = MIMEText(f"Votre code Kiké Saré Business : {code}")
         msg['Subject'] = '🔑 Validation Kiké Saré'
         msg['From'] = expediteur
         msg['To'] = destinataire
@@ -57,110 +59,129 @@ def envoyer_code_validation(destinataire, code):
         return True
     except: return False
 
-# --- 4. GESTION DES ÉTATS ---
+# --- 4. AUTHENTIFICATION ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 5. AUTHENTIFICATION ---
 if not st.session_state['connected']:
-    col_left, col_mid, col_right = st.columns([1, 2, 1])
-    with col_mid:
-        st.markdown("<h1 style='text-align: center;'>🇬🇳 Kiké Saré</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: gray;'>Votre assistant de paiement sécurisé en Guinée</p>", unsafe_allow_html=True)
-        
-        if st.session_state['verifying']:
-            st.info(f"📩 Code envoyé à : **{st.session_state['temp_id']}**")
-            code_saisi = st.text_input("Entrez le code reçu")
-            if st.button("✅ Valider mon compte"):
-                if code_saisi == str(st.session_state['correct_code']):
-                    conn = get_db_connection()
-                    conn.execute("INSERT OR REPLACE INTO users VALUES (?, ?, ?, ?, 1)", 
-                                (st.session_state['temp_id'], st.session_state['temp_pwd'], 
-                                 st.session_state['temp_name'], st.session_state['temp_type']))
-                    conn.commit()
-                    conn.close()
-                    st.success("Compte validé ! Connectez-vous.")
-                    st.session_state['verifying'] = False
-                    st.rerun()
-        else:
-            tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Créer un compte"])
-            with tab1:
-                e_log = st.text_input("Identifiant (Email ou Tél)")
-                p_log = st.text_input("Mot de passe", type="password")
-                if st.button("Se connecter"):
-                    conn = get_db_connection()
-                    user = conn.execute("SELECT * FROM users WHERE identifier=? AND password=? AND verified=1", (e_log, p_log)).fetchone()
-                    conn.close()
-                    if user:
-                        st.session_state.update({'connected': True, 'user_name': user[2], 'user_id': user[0]})
-                        st.rerun()
-                    else: st.error("Identifiants incorrects.")
-
-            with tab2: # INSCRIPTION
-                with st.form("inscription_form"):
-                    choice = st.radio("S'inscrire via :", ["Email", "Numéro de téléphone"])
-                    id_u = st.text_input("Email ou Numéro")
-                    nom = st.text_input("Nom complet")
-                    p1 = st.text_input("Créer un mot de passe", type="password")
-                    p2 = st.text_input("Confirmez le mot de passe", type="password")
-                    if st.form_submit_button("🚀 S'inscrire et recevoir le code"):
-                        if p1 == p2 and len(p1) >= 6:
-                            c_gen = random.randint(100000, 999999)
-                            if envoyer_code_validation(id_u, c_gen):
-                                st.session_state.update({'temp_id': id_u, 'temp_pwd': p1, 'temp_name': nom, 'temp_type': choice, 'correct_code': c_gen, 'verifying': True})
-                                st.rerun()
-                        else: st.error("Les mots de passe doivent être identiques (min 6 car.)")
-
-# --- 6. INTERFACE PRINCIPALE (PAIEMENT ET RAPPELS) ---
-else:
-    st.sidebar.markdown(f"### 🇬🇳 Kiké Saré\n**Bienvenue, {st.session_state['user_name']}**")
+    st.markdown("<div class='main-title'>KIKÉ SARÉ</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sub-title'>La Fintech Guinéenne de confiance</div>", unsafe_allow_html=True)
     
-    # RAPPELS D'ÉCHÉANCES (MISE EN FORME CARDS)
-    st.subheader("🔔 Mes Rappels d'échéances")
-    conn = get_db_connection()
-    echs = conn.execute("SELECT service, date_limite, montant FROM echeances WHERE user_id=?", (st.session_state['user_id'],)).fetchall()
-    conn.close()
+    if st.session_state['verifying']:
+        st.info(f"📩 Code envoyé à : **{st.session_state['temp_id']}**")
+        code_s = st.text_input("Code de validation")
+        if st.button("Activer mon compte"):
+            if code_s == str(st.session_state['correct_code']):
+                conn = get_db_connection()
+                conn.execute("INSERT OR REPLACE INTO users VALUES (?, ?, ?, ?, 1)", 
+                            (st.session_state['temp_id'], st.session_state['temp_pwd'], 
+                             st.session_state['temp_name'], st.session_state['temp_type']))
+                conn.commit()
+                conn.close()
+                st.success("Compte activé !")
+                st.session_state['verifying'] = False
+                st.rerun()
+    else:
+        tab1, tab2 = st.tabs(["Connexion", "Inscription Business"])
+        with tab1:
+            e = st.text_input("Identifiant")
+            p = st.text_input("Mot de passe", type="password")
+            if st.button("Se connecter"):
+                conn = get_db_connection()
+                user = conn.execute("SELECT * FROM users WHERE identifier=? AND password=? AND verified=1", (e, p)).fetchone()
+                conn.close()
+                if user:
+                    st.session_state.update({'connected': True, 'user_name': user[2], 'user_id': user[0]})
+                    st.rerun()
+        with tab2: # Formulaire d'inscription complet
+            with st.form("signup_pro"):
+                id_u = st.text_input("Email ou Téléphone")
+                nom = st.text_input("Nom complet / Entreprise")
+                p1 = st.text_input("Mot de passe", type="password")
+                p2 = st.text_input("Confirmer mot de passe", type="password")
+                if st.form_submit_button("🚀 Créer mon compte"):
+                    if p1 == p2 and len(p1) >= 6:
+                        code = random.randint(100000, 999999)
+                        if envoyer_code_validation(id_u, code):
+                            st.session_state.update({'temp_id': id_u, 'temp_pwd': p1, 'temp_name': nom, 'temp_type': "Business", 'correct_code': code, 'verifying': True})
+                            st.rerun()
 
-    if echs:
-        cols = st.columns(len(echs) if len(echs) < 4 else 4)
-        for idx, e in enumerate(echs):
-            d_lim = datetime.strptime(e[1], '%Y-%m-%d')
-            diff = (d_lim - datetime.now()).days
-            with cols[idx % 4]:
-                if diff <= 3:
-                    st.error(f"**{e[0]}**\n\n{e[2]} GNF\n\nJ-{diff} !")
-                else:
-                    st.warning(f"**{e[0]}**\n\n{e[2]} GNF\n\nLe {e[1]}")
-    else: st.info("Aucun rappel actif.")
+# --- 5. INTERFACE CLIENT (DASHBOARD) ---
+else:
+    st.sidebar.markdown(f"### 👤 {st.session_state['user_name']}")
+    
+    # ONGLETS PRINCIPAUX
+    t_dash, t_pay, t_hist = st.tabs(["📊 Tableau de bord", "💳 Nouveau Paiement", "📜 Historique"])
 
-    st.markdown("---")
-    # PAIEMENT
-    st.title("💳 Effectuer un Paiement")
-    cp1, cp2 = st.columns([2, 1])
-    with cp1:
-        st.write("### 1. Détails du service")
-        serv = st.selectbox("Sélectionnez le service :", ["Réabonnement Canal+", "Facture EDG", "Facture SEG", "Frais Scolaires", "Achat Crédit"])
-        ref = st.text_input("Référence (Numéro de carte ou compteur)")
-        mont = st.number_input("Montant à régler (GNF)", min_value=5000, step=5000)
-    with cp2:
-        st.write("### 2. Moyen de paiement")
-        m_pay = st.radio("Mode :", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Bancaire"])
-        num_p = st.text_input("Numéro à débiter", placeholder="622 00 00 00")
-        rappel_on = st.checkbox("🔄 Programmer un rappel automatique")
+    # --- TAB 1 : TABLEAU DE BORD (RAPPELS COULEURS) ---
+    with t_dash:
+        st.subheader("🔔 Échéances à venir")
+        conn = get_db_connection()
+        echs = conn.execute("SELECT service, date_limite, montant FROM echeances WHERE user_id=? ORDER BY date_limite ASC", (st.session_state['user_id'],)).fetchall()
+        conn.close()
+        if echs:
+            cols = st.columns(4)
+            for idx, e in enumerate(echs):
+                d_lim = datetime.strptime(e[1], '%Y-%m-%d')
+                jours = (d_lim - datetime.now()).days
+                color = "#009460" if jours > 10 else "#fcd116" if jours > 5 else "#ce1126"
+                with cols[idx % 4]:
+                    st.markdown(f"<div style='border-left: 5px solid {color}; background: #f9f9f9; padding: 10px; border-radius: 5px;'><b>{e[0]}</b><br>💰 {e[2]} GNF<br>📅 {e[1]}</div>", unsafe_allow_html=True)
+        else: st.info("Aucun paiement futur programmé.")
 
-    if st.button("💎 Confirmer le Paiement Sécurisé"):
-        if ref:
-            with st.spinner("Vérification auprès de la banque..."):
-                time.sleep(2)
-                if rappel_on:
-                    prox = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+    # --- TAB 2 : NOUVEAU PAIEMENT (AVEC OPTION 3X) ---
+    with t_pay:
+        st.subheader("Effectuer une transaction")
+        c1, c2 = st.columns([2, 1])
+        with c1:
+            serv = st.selectbox("Service :", ["Achat Commerçant", "Frais de loyer", "Réabonnement Canal+", "Facture EDG", "Facture SEG", "Frais Scolaires"])
+            ref = st.text_input("Référence (N° Facture / Nom du bénéficiaire)")
+            montant = st.number_input("Montant (GNF)", min_value=5000)
+        with c2:
+            moyen = st.radio("Moyen :", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Visa"])
+            mode = st.selectbox("Modalité :", ["Comptant (1x)", "Échelonné (3x - 1er, 5, 10 du mois)"] if serv in ["Achat Commerçant", "Frais de loyer", "Facture EDG"] else ["Comptant (1x)"])
+        
+        if st.button("💎 Confirmer le Paiement"):
+            if ref:
+                with st.spinner("Transaction en cours..."):
+                    time.sleep(1.5)
                     conn = get_db_connection()
-                    conn.execute("INSERT INTO echeances (user_id, service, date_limite, montant) VALUES (?, ?, ?, ?)", (st.session_state['user_id'], serv, prox, mont))
+                    now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+                    
+                    # 1. Enregistrement immédiat dans l'HISTORIQUE
+                    conn.execute("INSERT INTO historique (user_id, service, montant, date_paiement, moyen, reference) VALUES (?, ?, ?, ?, ?, ?)",
+                                (st.session_state['user_id'], serv, montant, now_str, moyen, ref))
+                    
+                    # 2. Gestion des ÉCHÉANCES futures si 3x
+                    if "3x" in mode:
+                        mois_suiv = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1)
+                        dates = [mois_suiv.strftime('%Y-%m-01'), mois_suiv.strftime('%Y-%m-05'), mois_suiv.strftime('%Y-%m-10')]
+                        for d in dates:
+                            conn.execute("INSERT INTO echeances (user_id, service, date_limite, montant) VALUES (?, ?, ?, ?)", 
+                                        (st.session_state['user_id'], f"Partiel: {serv}", d, montant/3))
+                    
                     conn.commit()
                     conn.close()
-                st.balloons()
-                st.success(f"Paiement de {mont} GNF réussi pour {serv} !")
-        else: st.warning("Veuillez saisir une référence.")
+                    st.balloons()
+                    st.success("Paiement effectué et enregistré dans votre historique !")
+            else: st.warning("Référence obligatoire.")
+
+    # --- TAB 3 : HISTORIQUE (TRACES RÉELLES) ---
+    with t_hist:
+        st.subheader("📜 Historique de vos transactions")
+        conn = get_db_connection()
+        hist = conn.execute("SELECT service, montant, date_paiement, moyen, reference FROM historique WHERE user_id=? ORDER BY date_paiement DESC", (st.session_state['user_id'],)).fetchall()
+        conn.close()
+        if hist:
+            for h in hist:
+                st.markdown(f"""
+                <div class='history-card'>
+                    <span style='color:#009460; font-weight:bold;'>{h[2]}</span> | 
+                    <b>{h[0]}</b> - {h[1]} GNF 
+                    <br><small>Moyen: {h[3]} | Réf: {h[4]}</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else: st.info("Vous n'avez pas encore effectué de transaction.")
 
     if st.sidebar.button("🔌 Déconnexion"):
         st.session_state['connected'] = False
