@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timedelta
 import os
 
-# --- 1. CONFIGURATION ---
+# --- 1. CONFIGURATION & LOGO ---
 st.set_page_config(page_title="Kiké Saré - Business Pro", layout="wide", page_icon="🇬🇳")
 
 def display_logo():
@@ -16,7 +16,7 @@ def display_logo():
         </div>
         """, unsafe_allow_html=True)
 
-# --- 2. BASE DE DONNÉES (LOGIQUE IMMUABLE) ---
+# --- 2. BASE DE DONNÉES ---
 def get_db_connection():
     return sqlite3.connect('kikesare.db', check_same_thread=False)
 
@@ -48,71 +48,74 @@ if not st.session_state['connected']:
                 st.session_state.update({'connected': True, 'user_name': user[2], 'user_id': user[0]})
                 st.rerun()
 
-# --- 4. INTERFACE PAIEMENT MISE À JOUR ---
+# --- 4. INTERFACE PRINCIPALE ---
 else:
     st.sidebar.write(f"👤 {st.session_state['user_name']}")
     tabs = st.tabs(["📊 Échéances", "💳 Paiement", "📜 Historique"])
 
     with tabs[1]:
         st.subheader("Nouvelle transaction")
+        
+        # Structure en colonnes pour le formulaire
         c1, c2 = st.columns(2)
         
         with c1:
-            serv_map = {
-                "🎓 Frais de scolarité": "Frais de scolarité",
-                "🏠 Frais de loyer": "Frais de loyer", 
-                "🛍️ Achat Commerçant": "Achat Commerçant", 
-                "💡 Facture EDG": "Facture EDG"
-            }
-            serv_nom = serv_map[st.selectbox("Service", list(serv_map.keys()))]
-            ref = st.text_input("Référence (Facture/ID)")
+            serv_list = ["🎓 Frais de scolarité", "🏠 Frais de loyer", "🛍️ Achat Commerçant", "💡 Facture EDG", "📺 Canal+"]
+            serv_display = st.selectbox("Service", serv_list)
+            ref = st.text_input("Référence (N° Facture/Étudiant)")
             montant = st.number_input("Montant (GNF)", min_value=5000)
             
-            can_split = serv_nom in ["Frais de scolarité", "Achat Commerçant", "Frais de loyer", "Facture EDG"]
+            # Gestion des modalités (2x, 3x)
+            can_split = any(x in serv_display for x in ["scolarité", "loyer", "Commerçant", "EDG"])
             mode = st.selectbox("Modalité", ["Comptant", "2 fois (5 et 20)", "3 fois (5, 15, 25)"] if can_split else ["Comptant"])
 
         with c2:
+            # Sélection du moyen de paiement
             moyen = st.radio("Moyen de paiement", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Visa"])
             
-            # CONDITIONNEMENT DU FORMULAIRE SELON LE MOYEN [Action demandée]
-            info_paiement = ""
+            # --- LOGIQUE DYNAMIQUE DES CHAMPS ---
+            info_final = ""
             if moyen == "💳 Carte Visa":
-                st.markdown("---")
-                num_card = st.text_input("💳 Numéro de la carte", placeholder="4000 0000 0000 0000")
-                nom_card = st.text_input("👤 Nom sur la carte")
-                col_v1, col_v2 = st.columns(2)
-                exp_card = col_v1.text_input("📅 Expiration (MM/AA)")
-                cvv_card = col_v2.text_input("🔒 CVV (Code secret)", type="password")
-                info_paiement = f"Visa: {num_card[-4:]}" # On ne garde que les 4 derniers chiffres pour l'historique
+                st.info("💳 Renseignez les détails de votre carte")
+                num_card = st.text_input("Numéro de carte", placeholder="4000 1234 5678 9010")
+                nom_card = st.text_input("Nom sur la carte")
+                cv1, cv2 = st.columns(2)
+                exp_card = cv1.text_input("Expiration (MM/AA)")
+                cvv_card = cv2.text_input("CVV", type="password", help="3 chiffres au dos")
+                # On stocke une version masquée pour l'historique
+                if num_card: info_final = f"Visa: ****{num_card[-4:]}"
             else:
-                num_debit = st.text_input("📱 Numéro à débiter", placeholder="622...")
-                info_paiement = num_debit
+                # Champs pour Mobile Money (Orange/MTN)
+                num_momo = st.text_input("📱 Numéro à débiter", placeholder="622 00 00 00")
+                info_final = num_momo
 
+        st.markdown("---")
         if st.button("💎 Valider le Règlement"):
-            if ref and info_paiement:
+            if ref and info_final:
                 conn = get_db_connection()
                 now = datetime.now().strftime('%Y-%m-%d %H:%M')
                 
-                # Enregistrement historique
+                # Sauvegarde historique
                 conn.execute("INSERT INTO historique (user_id, service, montant, date_paiement, moyen, reference, num_debit) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                            (st.session_state['user_id'], serv_nom, montant, now, moyen, ref, info_paiement))
+                            (st.session_state['user_id'], serv_display, montant, now, moyen, ref, info_final))
                 
                 # Logique des dates (5, 15, 25 ou 5, 20)
                 if "fois" in mode:
                     m_suiv = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1)
-                    dates_e = ["05", "15", "25"] if "3" in mode else ["05", "20"]
+                    dates_list = ["05", "15", "25"] if "3" in mode else ["05", "20"]
                     div = 3 if "3" in mode else 2
-                    for d in dates_e:
+                    for d in dates_list:
                         conn.execute("INSERT INTO echeances (user_id, service, date_limite, montant) VALUES (?, ?, ?, ?)", 
-                                    (st.session_state['user_id'], f"Partiel: {serv_nom}", m_suiv.strftime(f'%Y-%m-{d}'), montant/div))
+                                    (st.session_state['user_id'], f"Partiel: {serv_display}", m_suiv.strftime(f'%Y-%m-{d}'), montant/div))
                 
                 conn.commit(); conn.close()
-                st.balloons(); st.success("Paiement validé avec succès !")
+                st.balloons(); st.success("Transaction effectuée avec succès !")
             else:
-                st.warning("Veuillez remplir toutes les informations de paiement.")
+                st.error("❌ Erreur : Veuillez remplir les informations de paiement (Numéro ou détails Carte).")
 
-    with tabs[0]: # Dashboard Couleurs
-        st.subheader("🔔 Mes Échéances")
+    # Onglets Échéances et Historique (Conservés sans changement)
+    with tabs[0]:
+        st.subheader("🔔 Calendrier des paiements")
         conn = get_db_connection()
         echs = conn.execute("SELECT service, date_limite, montant FROM echeances WHERE user_id=? ORDER BY date_limite ASC", (st.session_state['user_id'],)).fetchall()
         conn.close()
@@ -125,7 +128,7 @@ else:
                 with cols[idx % 4]:
                     st.markdown(f"<div style='border-left:5px solid {color}; padding:10px; background:#f9f9f9; border-radius:5px;'><b>{e[0]}</b><br>{e[2]} GNF<br>Le {e[1]}</div>", unsafe_allow_html=True)
 
-    with tabs[2]: # Historique
+    with tabs[2]:
         st.subheader("📜 Historique")
         conn = get_db_connection()
         hist = conn.execute("SELECT service, montant, date_paiement, reference, num_debit FROM historique WHERE user_id=? ORDER BY date_paiement DESC", (st.session_state['user_id'],)).fetchall()
