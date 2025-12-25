@@ -48,8 +48,8 @@ def display_header():
                 ☀️<span style='position: absolute; top: 20px; left: 25px; font-size: 40px;'>💸</span>
             </div>
             <h1 style='color:#ce1126; margin-top:0px; margin-bottom:0;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom:0;'>L'argent au service de votre avenir</p>
-            <p style='color:#666; font-style: italic;'>Payez vos mensualités en toute sécurité !</p>
+            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom:0;'>Payez vos mensualités en toute sécurité!</p>
+            <p style='color:#666; font-style: italic;'>La FinTech qui change votre monde</p>
             <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
         </div>
     """, unsafe_allow_html=True)
