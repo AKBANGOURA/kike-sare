@@ -119,7 +119,7 @@ else:
     st.title("💳 Effectuer un Paiement")
     col1, col2 = st.columns(2)
     with col1:
-        serv = st.selectbox("Service", ["Canal+", "EDG", "SEG", "Scolarité", "Loyer"])
+        serv = st.selectbox("Service", ["Canal+", "EDG", "SEG", "Scolarité"])
         ref = st.text_input("Référence client")
         mont = st.number_input("Montant (GNF)", min_value=1000)
     with col2:
