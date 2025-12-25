@@ -3,6 +3,8 @@ import sqlite3
 import random
 from datetime import datetime, timedelta
 import os
+from PIL import Image
+import io
 
 # --- 1. CONFIGURATION & LOGO ---
 st.set_page_config(page_title="Kiké Saré - Business Pro", layout="wide", page_icon="🇬🇳")
@@ -16,16 +18,30 @@ def display_logo():
         </div>
         """, unsafe_allow_html=True)
 
-# --- 2. BASE DE DONNÉES ---
+# --- 2. BASE DE DONNÉES (LOGIQUE IMMUABLE + PHOTO PROFIL) ---
 def get_db_connection():
     return sqlite3.connect('kikesare.db', check_same_thread=False)
 
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, verified INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS echeances (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, date_limite DATE, montant REAL)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS historique (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, montant REAL, date_paiement DATETIME, moyen TEXT, reference TEXT, num_debit TEXT)''')
+    # Table users avec colonne profile_pic
+    c.execute('''CREATE TABLE IF NOT EXISTS users 
+                 (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, verified INTEGER, profile_pic BLOB)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS echeances 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, date_limite DATE, montant REAL)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS historique 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, montant REAL, 
+                  date_paiement DATETIME, moyen TEXT, reference TEXT, num_debit TEXT, photo TEXT)''')
+    
+    # Réparation si profile_pic manque
+    try:
+        c.execute("SELECT profile_pic FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        c.execute("ALTER TABLE users ADD COLUMN profile_pic BLOB")
+        
     conn.commit()
     conn.close()
 
@@ -50,13 +66,39 @@ if not st.session_state['connected']:
 
 # --- 4. INTERFACE PRINCIPALE ---
 else:
-    st.sidebar.write(f"👤 {st.session_state['user_name']}")
+    # --- SIDEBAR AVEC PHOTO DE PROFIL ---
+    conn = get_db_connection()
+    user_data = conn.execute("SELECT profile_pic FROM users WHERE identifier=?", (st.session_state['user_id'],)).fetchone()
+    conn.close()
+
+    with st.sidebar:
+        if user_data and user_data[0]:
+            st.image(user_data[0], width=100)
+        else:
+            st.image("https://www.w3schools.com/howto/img_avatar.png", width=100) # Avatar par défaut
+        
+        st.markdown(f"### 👤 {st.session_state['user_name']}")
+        
+        # Option pour changer la photo
+        new_pic = st.file_uploader("Modifier ma photo de profil", type=['png', 'jpg', 'jpeg'], key="profile")
+        if new_pic:
+            img_byte_arr = new_pic.getvalue()
+            conn = get_db_connection()
+            conn.execute("UPDATE users SET profile_pic=? WHERE identifier=?", (img_byte_arr, st.session_state['user_id']))
+            conn.commit()
+            conn.close()
+            st.success("Photo mise à jour !")
+            st.rerun()
+            
+        st.divider()
+        if st.button("🔌 Déconnexion"):
+            st.session_state['connected'] = False
+            st.rerun()
+
     tabs = st.tabs(["📊 Échéances", "💳 Paiement", "📜 Historique"])
 
     with tabs[1]:
         st.subheader("Nouvelle transaction")
-        
-        # Structure en colonnes pour le formulaire
         c1, c2 = st.columns(2)
         
         with c1:
@@ -64,42 +106,34 @@ else:
             serv_display = st.selectbox("Service", serv_list)
             ref = st.text_input("Référence (N° Facture/Étudiant)")
             montant = st.number_input("Montant (GNF)", min_value=5000)
-            
-            # Gestion des modalités (2x, 3x)
-            can_split = any(x in serv_display for x in ["scolarité", "loyer", "Commerçant", "EDG"])
-            mode = st.selectbox("Modalité", ["Comptant", "2 fois (5 et 20)", "3 fois (5, 15, 25)"] if can_split else ["Comptant"])
+            uploaded_file = st.file_uploader("📸 Joindre un justificatif", type=['png', 'jpg', 'jpeg'])
 
         with c2:
-            # Sélection du moyen de paiement
             moyen = st.radio("Moyen de paiement", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Visa"])
-            
-            # --- LOGIQUE DYNAMIQUE DES CHAMPS ---
             info_final = ""
             if moyen == "💳 Carte Visa":
-                st.info("💳 Renseignez les détails de votre carte")
-                num_card = st.text_input("Numéro de carte", placeholder="4000 1234 5678 9010")
+                num_card = st.text_input("Numéro de carte")
                 nom_card = st.text_input("Nom sur la carte")
                 cv1, cv2 = st.columns(2)
                 exp_card = cv1.text_input("Expiration (MM/AA)")
-                cvv_card = cv2.text_input("CVV", type="password", help="3 chiffres au dos")
-                # On stocke une version masquée pour l'historique
+                cvv_card = cv2.text_input("CVV", type="password")
                 if num_card: info_final = f"Visa: ****{num_card[-4:]}"
             else:
-                # Champs pour Mobile Money (Orange/MTN)
-                num_momo = st.text_input("📱 Numéro à débiter", placeholder="622 00 00 00")
+                num_momo = st.text_input("📱 Numéro à débiter")
                 info_final = num_momo
 
-        st.markdown("---")
+            can_split = any(x in serv_display for x in ["scolarité", "loyer", "Commerçant", "EDG"])
+            mode = st.selectbox("Modalité", ["Comptant", "2 fois (5 et 20)", "3 fois (5, 15, 25)"] if can_split else ["Comptant"])
+
         if st.button("💎 Valider le Règlement"):
             if ref and info_final:
                 conn = get_db_connection()
                 now = datetime.now().strftime('%Y-%m-%d %H:%M')
+                photo_name = f"photo_{random.randint(1000,9999)}.jpg" if uploaded_file else "Aucune"
                 
-                # Sauvegarde historique
-                conn.execute("INSERT INTO historique (user_id, service, montant, date_paiement, moyen, reference, num_debit) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                            (st.session_state['user_id'], serv_display, montant, now, moyen, ref, info_final))
+                conn.execute("INSERT INTO historique (user_id, service, montant, date_paiement, moyen, reference, num_debit, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                            (st.session_state['user_id'], serv_display, montant, now, moyen, ref, info_final, photo_name))
                 
-                # Logique des dates (5, 15, 25 ou 5, 20)
                 if "fois" in mode:
                     m_suiv = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1)
                     dates_list = ["05", "15", "25"] if "3" in mode else ["05", "20"]
@@ -109,13 +143,10 @@ else:
                                     (st.session_state['user_id'], f"Partiel: {serv_display}", m_suiv.strftime(f'%Y-%m-{d}'), montant/div))
                 
                 conn.commit(); conn.close()
-                st.balloons(); st.success("Transaction effectuée avec succès !")
-            else:
-                st.error("❌ Erreur : Veuillez remplir les informations de paiement (Numéro ou détails Carte).")
+                st.balloons(); st.success("Transaction validée !")
 
-    # Onglets Échéances et Historique (Conservés sans changement)
-    with tabs[0]:
-        st.subheader("🔔 Calendrier des paiements")
+    with tabs[0]: # Échéances
+        st.subheader("🔔 Mes Échéances")
         conn = get_db_connection()
         echs = conn.execute("SELECT service, date_limite, montant FROM echeances WHERE user_id=? ORDER BY date_limite ASC", (st.session_state['user_id'],)).fetchall()
         conn.close()
@@ -128,13 +159,11 @@ else:
                 with cols[idx % 4]:
                     st.markdown(f"<div style='border-left:5px solid {color}; padding:10px; background:#f9f9f9; border-radius:5px;'><b>{e[0]}</b><br>{e[2]} GNF<br>Le {e[1]}</div>", unsafe_allow_html=True)
 
-    with tabs[2]:
+    with tabs[2]: # Historique
         st.subheader("📜 Historique")
         conn = get_db_connection()
-        hist = conn.execute("SELECT service, montant, date_paiement, reference, num_debit FROM historique WHERE user_id=? ORDER BY date_paiement DESC", (st.session_state['user_id'],)).fetchall()
+        hist = conn.execute("SELECT service, montant, date_paiement, reference, num_debit, photo FROM historique WHERE user_id=? ORDER BY date_paiement DESC", (st.session_state['user_id'],)).fetchall()
         conn.close()
         for h in hist:
-            st.markdown(f"<div style='border-bottom:1px solid #eee; padding:10px;'><b>{h[2]}</b> | {h[0]} : {h[1]} GNF<br><small>Réf : {h[3]} | Source : {h[4]}</small></div>", unsafe_allow_html=True)
-
-    if st.sidebar.button("🔌 Déconnexion"):
-        st.session_state['connected'] = False; st.rerun()
+            with st.expander(f"📅 {h[2]} | {h[0]} - {h[1]} GNF"):
+                st.write(f"**Référence :** {h[3]} | **Source :** {h[4]}")
