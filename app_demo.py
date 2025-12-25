@@ -3,11 +3,9 @@ import sqlite3
 import random
 from datetime import datetime, timedelta
 import os
-from PIL import Image
-import io
 
 # --- 1. CONFIGURATION ---
-st.set_page_config(page_title="Kiké Saré - Fintech", layout="wide", page_icon="🇬🇳")
+st.set_page_config(page_title="Kiké Saré - La Fintech Guinéenne", layout="wide", page_icon="🇬🇳")
 
 def display_logo():
     st.markdown("""
@@ -18,78 +16,80 @@ def display_logo():
         </div>
         """, unsafe_allow_html=True)
 
-# --- 2. BASE DE DONNÉES (LOGIQUE IMMUABLE) ---
+# --- 2. BASE DE DONNÉES ---
 def get_db_connection():
     return sqlite3.connect('kikesare.db', check_same_thread=False)
 
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
+    # Table utilisateurs avec type de compte et photo
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, verified INTEGER, profile_pic BLOB)''')
     c.execute('''CREATE TABLE IF NOT EXISTS echeances 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, date_limite DATE, montant REAL)''')
     c.execute('''CREATE TABLE IF NOT EXISTS historique 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, montant REAL, 
-                  date_paiement DATETIME, moyen TEXT, reference TEXT, num_debit TEXT, photo TEXT, entrepreneur_id TEXT)''')
+                  date_paiement DATETIME, moyen TEXT, reference TEXT, num_debit TEXT, entrepreneur_id TEXT)''')
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- 3. GESTION DES ÉTATS ---
+# --- 3. SESSION STATE ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. ACCÈS & INSCRIPTION RESTAURÉE ---
+# --- 4. ACCÈS & INSCRIPTION ---
 if not st.session_state['connected']:
     display_logo()
     
     if st.session_state['verifying']:
         st.info(f"📩 Code envoyé à : **{st.session_state['temp_id']}**")
-        code_s = st.text_input("Saisissez le code reçu")
-        if st.button("✅ Valider l'inscription"):
+        code_s = st.text_input("Code de validation")
+        if st.button("✅ Valider mon compte"):
             if code_s == str(st.session_state['correct_code']):
                 conn = get_db_connection()
                 conn.execute("INSERT OR REPLACE INTO users (identifier, password, full_name, type, verified) VALUES (?, ?, ?, ?, 1)", 
                             (st.session_state['temp_id'], st.session_state['temp_pwd'], 
                              st.session_state['temp_name'], st.session_state['temp_type']))
                 conn.commit(); conn.close()
-                st.success("Compte créé avec succès ! Connectez-vous.")
-                st.session_state['verifying'] = False
-                st.rerun()
+                st.success("Compte validé ! Connectez-vous.")
+                st.session_state['verifying'] = False; st.rerun()
     else:
-        t1, t2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
-        with t1:
-            e = st.text_input("Identifiant (Email/Tél)")
-            p = st.text_input("Mot de passe", type="password")
+        tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
+        with tab1:
+            e_log = st.text_input("Identifiant (Email ou Tél)")
+            p_log = st.text_input("Mot de passe", type="password")
             if st.button("Se connecter"):
                 conn = get_db_connection()
-                user = conn.execute("SELECT * FROM users WHERE identifier=? AND password=? AND verified=1", (e, p)).fetchone()
+                user = conn.execute("SELECT * FROM users WHERE identifier=? AND password=? AND verified=1", (e_log, p_log)).fetchone()
                 conn.close()
                 if user:
                     st.session_state.update({'connected': True, 'user_name': user[2], 'user_id': user[0], 'user_type': user[3]})
                     st.rerun()
-        with t2:
-            with st.form("signup_complete"):
-                st.write("### Créer votre compte")
-                new_id = st.text_input("Email ou Numéro de téléphone")
+                else: st.error("Identifiants incorrects.")
+
+        with tab2:
+            with st.form("inscription_form"):
+                st.subheader("Créer un nouveau compte")
+                new_id = st.text_input("Email ou Téléphone")
                 new_name = st.text_input("Nom complet ou Nom de l'entreprise")
-                # CHOIX DU TYPE DE COMPTE [Action demandée]
-                u_type = st.radio("Vous êtes :", ["Particulier", "Entrepreneur (École, Loyer, Commerçant)"])
+                # CHOIX DU PROFIL [Action demandée]
+                u_type = st.radio("Type de compte :", ["Particulier", "Entrepreneur (École, Loyer, Commerce)"])
                 p1 = st.text_input("Mot de passe", type="password")
                 p2 = st.text_input("Confirmer le mot de passe", type="password")
                 
-                if st.form_submit_button("🚀 Recevoir mon code"):
+                if st.form_submit_button("🚀 S'inscrire"):
                     if p1 == p2 and len(p1) >= 6:
                         code = random.randint(100000, 999999)
                         st.session_state.update({'temp_id': new_id, 'temp_pwd': p1, 'temp_name': new_name, 'temp_type': u_type, 'correct_code': code, 'verifying': True})
                         st.rerun()
-                    else: st.error("Les mots de passe ne correspondent pas (min 6 car.).")
+                    else: st.error("Erreur : Mots de passe non identiques ou trop courts.")
 
-# --- 5. INTERFACES DÉDIÉES ---
+# --- 5. ESPACES UTILISATEURS ---
 else:
-    # Sidebar commune avec Photo de profil
+    # Barre latérale commune avec photo de profil
     with st.sidebar:
         conn = get_db_connection()
         user_pic = conn.execute("SELECT profile_pic FROM users WHERE identifier=?", (st.session_state['user_id'],)).fetchone()
@@ -97,65 +97,71 @@ else:
         if user_pic and user_pic[0]: st.image(user_pic[0], width=100)
         else: st.image("https://www.w3schools.com/howto/img_avatar.png", width=100)
         
-        st.write(f"**{st.session_state['user_name']}**")
-        st.caption(f"Compte : {st.session_state['user_type']}")
+        st.write(f"### {st.session_state['user_name']}")
+        st.info(f"Rôle : {st.session_state['user_type']}")
         
+        new_pic = st.file_uploader("Changer ma photo", type=['png', 'jpg'])
+        if new_pic:
+            conn = get_db_connection()
+            conn.execute("UPDATE users SET profile_pic=? WHERE identifier=?", (new_pic.getvalue(), st.session_state['user_id']))
+            conn.commit(); conn.close(); st.rerun()
+
         if st.button("🔌 Déconnexion"):
             st.session_state['connected'] = False; st.rerun()
 
-    # --- ESPACE PARTICULIER (Tout ce qui a été fait) ---
+    # --- ESPACE PARTICULIER ---
     if st.session_state['user_type'] == "Particulier":
-        tabs = st.tabs(["📊 Mes Échéances", "💳 Payer un Service", "📜 Mon Historique"])
+        t_ech, t_pay, t_hist = st.tabs(["📊 Mes Échéances", "💳 Payer un Service", "📜 Historique"])
         
-        with tabs[1]: # Formulaire de paiement immuable
-            st.subheader("Effectuer un règlement")
-            c1, c2 = st.columns(2)
-            with c1:
+        with t_pay:
+            st.subheader("Nouveau paiement")
+            col1, col2 = st.columns(2)
+            with col1:
                 serv = st.selectbox("Service", ["🎓 Frais de scolarité", "🏠 Frais de loyer", "🛍️ Achat Commerçant", "💡 Facture EDG"])
-                ref = st.text_input("Référence")
+                ref = st.text_input("Référence (N° Facture/Étudiant)")
                 montant = st.number_input("Montant (GNF)", min_value=5000)
-                uploaded_file = st.file_uploader("📸 Justificatif", type=['png', 'jpg'])
-            with c2:
-                moyen = st.radio("Moyen", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Visa"])
+                mode = st.selectbox("Modalité", ["Comptant", "2 fois (5 et 20)", "3 fois (5, 15, 25)"])
+            with col2:
+                moyen = st.radio("Moyen de paiement", ["📱 Orange Money", "📱 MTN MoMo", "💳 Carte Visa"])
                 info_p = ""
                 if moyen == "💳 Carte Visa":
-                    nc = st.text_input("N° Carte"); nomc = st.text_input("Nom"); cv = st.columns(2)
-                    ex = cv[0].text_input("Exp"); cv[1].text_input("CVV", type="password")
+                    nc = st.text_input("N° de Carte")
+                    nomc = st.text_input("Nom sur la carte")
+                    cv = st.columns(2)
+                    cv[0].text_input("Exp (MM/AA)")
+                    cv[1].text_input("CVV", type="password")
                     if nc: info_p = f"Visa: ****{nc[-4:]}"
                 else:
                     info_p = st.text_input("📱 Numéro à débiter")
-                mode = st.selectbox("Modalité", ["Comptant", "2 fois (5 et 20)", "3 fois (5, 15, 25)"])
-
-            if st.button("💎 Valider"):
-                if ref and info_p:
-                    # Logique de sauvegarde historique et échéances (identique à la base immuable)
-                    st.success("Transaction réussie !")
-
-    # --- ESPACE ENTREPRENEUR (NOUVEAU) ---
-    else:
-        st.title("💼 Dashboard Entrepreneur")
-        t_biz1, t_biz2, t_biz3 = st.tabs(["📈 Vue d'ensemble", "👥 Mes Clients", "⚙️ Paramètres"])
-        
-        with t_biz1:
-            st.subheader("Suivi des encaissements")
-            col_b1, col_b2, col_b3 = st.columns(3)
-            # Simulé pour l'instant
-            col_b1.metric("Revenus Total", "0 GNF")
-            col_b2.metric("Clients Actifs", "0")
-            col_b3.metric("Échéances en attente", "0")
             
-            st.info("Ici s'afficheront les graphiques de vos revenus par mois.")
+            if st.button("💎 Valider le paiement"):
+                if ref and info_p:
+                    conn = get_db_connection()
+                    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+                    conn.execute("INSERT INTO historique (user_id, service, montant, date_paiement, moyen, reference, num_debit) VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                                (st.session_state['user_id'], serv, montant, now, moyen, ref, info_p))
+                    # Logique échéances (5, 15, 25 ou 5, 20)
+                    if "fois" in mode:
+                        m_suiv = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1)
+                        dates = ["05", "15", "25"] if "3" in mode else ["05", "20"]
+                        for d in dates:
+                            conn.execute("INSERT INTO echeances (user_id, service, date_limite, montant) VALUES (?, ?, ?, ?)", 
+                                        (st.session_state['user_id'], f"Echéance {serv}", m_suiv.strftime(f'%Y-%m-{d}'), montant/(3 if "3" in mode else 2)))
+                    conn.commit(); conn.close(); st.balloons(); st.success("Paiement enregistré !")
 
-        with t_biz2:
-            st.subheader("Liste des paiements reçus")
-            st.write("Aucune transaction reçue pour le moment.")
+    # --- ESPACE ENTREPRENEUR ---
+    else:
+        st.title("💼 Espace Gestion Entrepreneur")
+        tb1, tb2 = st.tabs(["📈 Tableau de bord", "👥 Suivi Clients"])
+        
+        with tb1:
+            st.subheader("Vos Statistiques d'encaissements")
+            c_ent1, c_ent2 = st.columns(2)
+            c_ent1.metric("Volume de transactions", "0 GNF")
+            c_ent2.metric("Paiements prévus (Échéances)", "0 GNF")
+            
+            st.info("Ici vous verrez l'évolution de vos revenus mensuels.")
 
-
-
-### 💡 Ce que j'ai ajouté :
-1.  **Restauration de l'inscription** : Le formulaire complet avec mot de passe et confirmation est de retour.
-2.  **Sélecteur de Profil** : Un bouton radio permet de choisir entre "Particulier" et "Entrepreneur".
-3.  **Espaces étanches** : Si vous vous connectez en tant qu'Entrepreneur, vous n'avez pas accès au formulaire de paiement de loyer, mais à la gestion de vos revenus.
-4.  **Logique Entrepreneur** : J'ai préparé les colonnes `entrepreneur_id` dans la base de données pour que, plus tard, quand un particulier paye une école, l'argent apparaisse directement sur le tableau de bord du propriétaire de cette école.
-
-**Voulez-vous que je crée le système qui permet à un particulier de "rechercher" l'entreprise d'un Entrepreneur (ex: une école spécifique) pour lui envoyer le paiement ?**
+        with tb2:
+            st.subheader("Liste des paiements reçus par vos clients")
+            st.write("Aucune donnée disponible pour le moment.")
