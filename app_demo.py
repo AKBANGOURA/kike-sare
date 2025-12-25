@@ -43,7 +43,6 @@ if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 # --- 4. ACCÈS : CONNEXION & INSCRIPTION ---
 if not st.session_state['connected']:
     st.markdown("<h1 style='text-align:center; color:#ce1126;'>KIKÉ SARÉ</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#ffff00; font-weight:bold;'>La Fintech Guinéenne</p>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#009460; font-weight:bold;'>Payez vos mensualités en toute sécurité</p>", unsafe_allow_html=True)
     
     if st.session_state['verifying']:
