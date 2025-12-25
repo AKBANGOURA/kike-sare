@@ -4,7 +4,7 @@ import random
 import smtplib
 from email.message import EmailMessage
 
-# --- 1. CONFIGURATION MAIL (Paramètres à configurer) ---
+# --- 1. CONFIGURATION MAIL (Identifiants intégrés) ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
 
