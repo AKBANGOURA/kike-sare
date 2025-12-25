@@ -1,133 +1,106 @@
 import streamlit as st
 import sqlite3
 import random
-from datetime import datetime, timedelta
+import smtplib
+from email.message import EmailMessage
 
-# --- 1. CONFIGURATION ---
-st.set_page_config(page_title="Kiké Saré - La Fintech Guinéenne", layout="wide", page_icon="🇬🇳")
+# --- 1. CONFIGURATION MAIL (À REMPLIR) ---
+# Pour que l'envoi fonctionne, utilisez un "Mot de passe d'application" Gmail
+EMAIL_SENDER = "bangourakallaa@gmail.com" 
+EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
 
-def display_logo():
-    st.markdown("""
-        <div style="text-align: center;">
-            <h1 style="color: #ce1126; margin-bottom: 0;">KIKÉ SARÉ</h1>
-            <p style="color: #009460; font-style: italic; font-weight: bold;">La Fintech Guinéenne</p>
-            <hr style="border: 1px solid #fcd116; width: 50%;">
-        </div>
-        """, unsafe_allow_html=True)
+def send_validation_mail(receiver, code):
+    msg = EmailMessage()
+    msg.set_content(f"Bienvenue sur Kiké Saré ! Votre code de validation est : {code}")
+    msg['Subject'] = "Validation de votre compte Kiké Saré"
+    msg['From'] = EMAIL_SENDER
+    msg['To'] = receiver
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+        return True
+    except Exception:
+        return False
 
-# --- 2. BASE DE DONNÉES ---
-def get_db_connection():
-    return sqlite3.connect('kikesare.db', check_same_thread=False)
+# --- 2. INITIALISATION ---
+st.set_page_config(page_title="Kiké Saré", layout="wide")
 
 def init_db():
-    conn = get_db_connection()
+    conn = sqlite3.connect('kikesare.db', check_same_thread=False)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users 
-                 (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, 
-                  verified INTEGER, siret TEXT, methode_retrait TEXT, num_retrait TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS historique 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, service TEXT, montant REAL, 
-                  date_paiement DATETIME, moyen TEXT, reference TEXT, entrepreneur_id TEXT)''')
+                 (id TEXT PRIMARY KEY, pwd TEXT, name TEXT, type TEXT, verified INT, siret TEXT)''')
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- 3. SESSION STATE ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. ACCÈS (LOGIN / INSCRIPTION) ---
+# --- 3. ACCÈS & INSCRIPTION ---
 if not st.session_state['connected']:
-    display_logo()
+    st.markdown("<h1 style='text-align:center; color:#ce1126;'>KIKÉ SARÉ</h1>", unsafe_allow_html=True)
     
     if st.session_state['verifying']:
-        st.info(f"📩 Code envoyé à : **{st.session_state['temp_id']}**")
-        code_s = st.text_input("Code de validation")
+        st.info(f"📩 Code envoyé à : {st.session_state['temp_id']}")
+        code_s = st.text_input("Saisissez le code reçu par mail")
         col_v1, col_v2 = st.columns(2)
         with col_v1:
-            if st.button("✅ Valider l'inscription"):
+            if st.button("✅ Valider"):
                 if code_s == str(st.session_state['correct_code']):
-                    conn = get_db_connection()
-                    conn.execute("INSERT OR REPLACE INTO users (identifier, password, full_name, type, verified, siret) VALUES (?, ?, ?, ?, 1, ?)", 
-                                (st.session_state['temp_id'], st.session_state['temp_pwd'], st.session_state['temp_name'], st.session_state['temp_type'], st.session_state.get('temp_siret', '')))
+                    conn = sqlite3.connect('kikesare.db')
+                    conn.execute("INSERT OR REPLACE INTO users VALUES (?, ?, ?, ?, 1, ?)", 
+                                (st.session_state['temp_id'], st.session_state['temp_pwd'], 
+                                 st.session_state['temp_name'], st.session_state['temp_type'], st.session_state.get('temp_siret', '')))
                     conn.commit(); conn.close()
-                    st.success("Compte validé ! Connectez-vous.")
-                    st.session_state['verifying'] = False; st.rerun()
+                    st.success("Compte activé !"); st.session_state['verifying'] = False; st.rerun()
         with col_v2:
-            if st.button("🔄 Renvoyer le code par mail"):
-                st.session_state['correct_code'] = random.randint(100000, 999999)
-                st.toast(f"Nouveau code généré : {st.session_state['correct_code']}")
+            if st.button("🔄 Renvoyer le code"):
+                new_c = random.randint(100000, 999999)
+                st.session_state['correct_code'] = new_c
+                send_validation_mail(st.session_state['temp_id'], new_c)
+                st.toast("Nouveau code envoyé !")
 
     else:
         tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
-        with tab1:
-            e_log = st.text_input("Identifiant (Email ou Tél)")
-            p_log = st.text_input("Mot de passe", type="password")
-            if st.button("Se connecter"):
-                conn = get_db_connection()
-                user = conn.execute("SELECT * FROM users WHERE identifier=? AND password=? AND verified=1", (e_log, p_log)).fetchone()
-                conn.close()
-                if user:
-                    st.session_state.update({'connected': True, 'user_name': user[2], 'user_id': user[0], 'user_type': user[3]})
-                    st.rerun()
-                else: st.error("Identifiants incorrects ou compte non vérifié.")
-
         with tab2:
-            u_role = st.radio("S'inscrire en tant que :", ["Particulier", "Entrepreneur (Groupe/Entreprise)"], horizontal=True)
-            with st.form("inscription_form"):
-                if u_role == "Particulier":
-                    nom_final = f"{st.text_input('Prénom')} {st.text_input('Nom')}"
-                    siret_val = ""
-                else:
-                    nom_final = st.text_input("Nom de l'entreprise (ex: Groupe AKB)")
-                    siret_val = st.text_input("N° SIRET / RCCM")
-                
-                new_id = st.text_input("Email de validation")
+            u_role = st.radio("Type de compte", ["Particulier", "Entrepreneur"], horizontal=True)
+            with st.form("inscription"):
+                nom = st.text_input("Nom / Entreprise")
+                email = st.text_input("Email")
                 p1 = st.text_input("Mot de passe", type="password")
                 p2 = st.text_input("Confirmer le mot de passe", type="password")
-                
-                if st.form_submit_button("🚀 Recevoir mon code"):
-                    if p1 == p2 and len(p1) >= 6:
+                siret = st.text_input("SIRET (si Business)") if u_role == "Entrepreneur" else ""
+                if st.form_submit_button("🚀 S'inscrire"):
+                    if p1 == p2 and email:
                         code = random.randint(100000, 999999)
-                        st.session_state.update({'temp_id': new_id, 'temp_pwd': p1, 'temp_name': nom_final, 'temp_type': u_role, 'temp_siret': siret_val, 'correct_code': code, 'verifying': True})
-                        st.rerun()
-                    else: st.error("Vérifiez vos mots de passe (6 car. min).")
+                        if send_validation_mail(email, code):
+                            st.session_state.update({'temp_id':email, 'temp_pwd':p1, 'temp_name':nom, 'temp_type':u_role, 'temp_siret':siret, 'correct_code':code, 'verifying':True})
+                            st.rerun()
+                        else: st.error("Erreur d'envoi du mail. Vérifiez vos réglages SMTP.")
 
-# --- 5. ESPACES DE GESTION ---
+# --- 4. INTERFACES CONNECTÉES ---
 else:
-    with st.sidebar:
-        st.write(f"### {st.session_state['user_name']}")
-        st.caption(f"Compte {st.session_state['user_type']}")
-        if st.button("🔌 Déconnexion"):
-            st.session_state['connected'] = False; st.rerun()
+    st.sidebar.title(f"👤 {st.session_state['user_name']}")
+    if st.sidebar.button("Déconnexion"): st.session_state['connected'] = False; st.rerun()
 
-    if st.session_state['user_type'] != "Particulier":
-        # ESPACE ENTREPRENEUR / GROUPE
-        st.title("💼 Dashboard Business - Gestion de Fonds")
-        t1, t2, t3 = st.tabs(["📊 Suivi des Recettes", "💸 Mode de Réception", "👥 Clients"])
-        
-        with t1:
-            st.subheader("Encaissements par catégorie")
-            c1, c2, c3 = st.columns(3)
-            # Les données suivantes sont simulées pour l'interface
-            c1.metric("🏠 Loyers reçus", "45.000.000 GNF", "+10%")
-            c2.metric("🎓 Scolarités", "22.500.000 GNF")
-            c3.metric("🛒 Marchandises", "8.900.000 GNF")
-            
-            st.write("### Graphique des revenus")
-            st.bar_chart({"Loyers": [30, 45], "Scolarité": [15, 22.5], "Ventes": [5, 8.9]})
-
-        with t2:
-            st.subheader("💰 Configuration de la réception des fonds")
-            st.write("Enregistrez le moyen par lequel vous souhaitez recevoir l'argent collecté.")
-            with st.form("config_retrait"):
-                methode = st.selectbox("Moyen de réception", ["Orange Money Business", "MTN MoMo Business", "Virement Bancaire"])
-                num = st.text_input("Numéro ou RIB de réception")
-                if st.form_submit_button("💾 Enregistrer"):
-                    st.success("Moyen de réception configuré avec succès !")
-
+    if st.session_state['user_type'] == "Particulier":
+        # ESPACE PARTICULIER : PAIEMENTS
+        st.title("📱 Mes Paiements")
+        t_p1, t_p2 = st.tabs(["💳 Effectuer un Paiement", "📜 Historique"])
+        with t_p1:
+            with st.form("pay"):
+                service = st.selectbox("Service", ["Loyer", "Frais de scolarité", "Vente marchandise"])
+                moyen = st.radio("Moyen", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
+                montant = st.number_input("Montant (GNF)", min_value=100)
+                if st.form_submit_button("Valider le Règlement"):
+                    st.success(f"Paiement de {montant} GNF effectué pour : {service}")
     else:
-        # ESPACE PARTICULIER (Paiement)
-        st.title("📱 Mon Portefeuille de Paiement")
-        st.info("Paiement de loyer, scolarité et factures avec échelonnement.")
+        # ESPACE BUSINESS : GROUPE AKB
+        st.title("💼 Dashboard Business")
+        st.subheader("Suivi des encaissements")
+        c1, c2 = st.columns(2)
+        c1.metric("Total Reçu", "25.000.000 GNF")
+        st.bar_chart({"Loyer": 15, "Scolarité": 10})
