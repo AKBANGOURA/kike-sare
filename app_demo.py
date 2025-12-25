@@ -39,21 +39,18 @@ init_db()
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. AFFICHAGE DU LOGO ---
+# --- 4. AFFICHAGE DU LOGO (Soleil + Argent) ---
 def display_header():
-    # Logo Soleil Jaune + Argent Vert (Hébergé pour l'application)
-    logo_url = "https://img.icons8.com/emoji/120/sun-emoji.png" # Soleil
-    money_url = "https://img.icons8.com/color/48/money-bag.png" # Argent
+    # URL d'une image correspondant à votre logo (Soleil et Argent)
+    logo_url = "https://cdn-icons-png.flaticon.com/512/3931/3931365.png" # Icône Soleil/Économie
     
     st.markdown(f"""
         <div style='text-align: center;'>
-            <div style='position: relative; display: inline-block;'>
-                <img src='{logo_url}' width='120'>
-                <img src='{money_url}' width='50' style='position: absolute; top: 35px; left: 35px;'>
-            </div>
-            <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:18px;'>L'argent au service de votre avenir</p>
-            <hr style='border: 1px solid #f0f2f6;'>
+            <img src='{logo_url}' width='150' style='margin-bottom: 10px;'>
+            <h1 style='color:#ce1126; margin-top:0; margin-bottom:0;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:20px;'>L'argent au service de votre avenir</p>
+            <p style='color:#666; font-style: italic;'>Payez vos mensualités en toute sécurité !</p>
+            <hr style='border: 1px solid #f0f2f6; width: 50%; margin: auto; margin-bottom: 20px;'>
         </div>
     """, unsafe_allow_html=True)
 
@@ -84,18 +81,18 @@ if not st.session_state['connected']:
                 if u:
                     st.session_state.update({'connected': True, 'user_name': u[2], 'user_id': u[0], 'user_type': u[3]})
                     st.rerun()
-                else: st.error("Échec de connexion.")
+                else: st.error("Identifiants incorrects.")
 
         with tab2:
-            u_role = st.radio("Type :", ["Particulier", "Entrepreneur"], horizontal=True)
+            u_role = st.radio("Type de compte :", ["Particulier", "Entrepreneur"], horizontal=True)
             with st.form("ins_form"):
-                nom_f = st.text_input("Nom complet / Entreprise")
-                s_v = st.text_input("SIRET / RCCM (si Pro)") if u_role == "Entrepreneur" else ""
-                em = st.text_input("Email")
-                p1 = st.text_input("Mot de passe", type="password")
-                p2 = st.text_input("Confirmez", type="password")
-                if st.form_submit_button("🚀 S'inscrire"):
-                    if p1 == p2 and len(p1) >= 6:
+                nom_f = st.text_input("Prénom & Nom / Nom Entreprise")
+                s_v = st.text_input("N° SIRET / RCCM") if u_role == "Entrepreneur" else ""
+                em = st.text_input("Votre Email")
+                p1 = st.text_input("Nouveau mot de passe", type="password")
+                p2 = st.text_input("Confirmez le mot de passe", type="password")
+                if st.form_submit_button("🚀 Créer mon compte"):
+                    if p1 == p2 and len(p1) >= 6 and em:
                         code = random.randint(100000, 999999)
                         if send_validation_mail(em, code):
                             st.session_state.update({'temp_id': em, 'temp_pwd': p1, 'temp_name': nom_f, 'temp_type': u_role, 'temp_siret': s_v, 'correct_code': code, 'verifying': True})
@@ -104,32 +101,30 @@ if not st.session_state['connected']:
 # --- 6. ESPACES UTILISATEURS ---
 else:
     with st.sidebar:
-        st.markdown("<h2 style='text-align:center;'>☀️💰</h2>", unsafe_allow_html=True)
-        st.write(f"**Connecté :** {st.session_state['user_name']}")
+        # Mini logo dans la barre latérale
+        st.markdown("<div style='text-align:center;'><img src='https://cdn-icons-png.flaticon.com/512/3931/3931365.png' width='80'></div>", unsafe_allow_html=True)
+        st.write(f"### {st.session_state['user_name']}")
         if st.button("🔌 Déconnexion"): st.session_state['connected'] = False; st.rerun()
 
     if st.session_state['user_type'] == "Particulier":
-        st.title("💳 Espace de Règlement")
+        st.title("💳 Effectuer un Règlement")
         col_a, col_b = st.columns(2)
         with col_a:
-            service = st.selectbox("Type de frais", ["Scolarité", "Loyer", "EDG/SEG", "Commerçant"])
-            montant = st.number_input("Montant à payer (GNF)", min_value=1000, step=500)
+            service = st.selectbox("Payer pour :", ["🎓 Frais de Scolarité", "🏠 Loyer", "💡 Facture EDG/SEG", "🛍️ Achat Commerçant"])
+            montant = st.number_input("Montant (GNF)", min_value=1000)
         with col_b:
-            moyen = st.radio("Moyen de paiement", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
+            moyen = st.radio("Moyen de paiement :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
             if moyen == "Carte Visa":
                 st.text_input("💳 N° de Carte")
                 st.text_input("🔒 CVV", type="password")
             else:
                 st.text_input("📱 Numéro de téléphone", placeholder="622...")
-
-        if st.button("💎 Payer maintenant"):
-            with st.spinner('Traitement sécurisé en cours...'):
-                time.sleep(2) # Simulation de la passerelle
-                st.success(f"Paiement de {montant} GNF réussi pour {service} !")
-                st.balloons()
-                st.download_button("📥 Télécharger le reçu (PDF)", "Reçu de paiement Kiké Saré", file_name="recu_kikesare.txt")
+        
+        if st.button("💎 Valider le Paiement"):
+            with st.spinner('Validation en cours...'):
+                time.sleep(2)
+                st.balloons(); st.success(f"Paiement de {montant} GNF validé !")
 
     else:
-        st.title(f"📈 Dashboard : {st.session_state['user_name']}")
-        st.metric("Balance disponible", "0 GNF")
-        st.info("Les fonds collectés sont transférés vers votre compte de réception sous 24h.")
+        st.title(f"💼 Business : {st.session_state['user_name']}")
+        st.metric("Total des revenus collectés", "0 GNF")
