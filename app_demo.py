@@ -1,135 +1,132 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import io
-import os
+import sqlite3
+import smtplib
+from email.mime.text import MIMEText
+import random
+import time
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Kiké Saré - Officiel", layout="wide", page_icon="🇬🇳")
+# --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Kiké Saré - Production", layout="wide", page_icon="🇬🇳")
 
-# --- GESTION AUTOMATIQUE DE LA BASE DE DONNÉES ---
-USER_DB = "users_db.csv"
+# --- INITIALISATION BASE DE DONNÉES (SQL REAL) ---
+def init_db():
+    conn = sqlite3.connect('kikesare.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users 
+                 (email TEXT PRIMARY KEY, password TEXT, full_name TEXT, verified INTEGER)''')
+    conn.commit()
+    conn.close()
 
-def initialiser_db():
-    if os.path.exists(USER_DB):
-        try:
-            df_temp = pd.read_csv(USER_DB)
-            if "identifier" not in df_temp.columns:
-                os.remove(USER_DB)
-        except Exception:
-            os.remove(USER_DB)
-    if not os.path.exists(USER_DB):
-        df_init = pd.DataFrame(columns=["identifier", "password", "full_name", "verified"])
-        df_init.to_csv(USER_DB, index=False)
+init_db()
 
-initialiser_db()
+# --- FONCTION D'ENVOI DE MAIL RÉEL ---
+def envoyer_mail_validation(destinataire, code):
+    try:
+        # Récupération sécurisée depuis les Secrets configurés sur Streamlit Cloud
+        expediteur = st.secrets["EMAIL_USER"] 
+        mot_de_passe = st.secrets["EMAIL_PASSWORD"] 
+        
+        msg = MIMEText(f"Votre code de validation Kiké Saré est : {code}")
+        msg['Subject'] = '🔑 Code de sécurité Kiké Saré'
+        msg['From'] = expediteur
+        msg['To'] = destinataire
 
-# --- FONCTIONS UTILES ---
-def create_account(identifier, pwd, name):
-    df = pd.read_csv(USER_DB)
-    if identifier in df['identifier'].values:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(expediteur, mot_de_passe)
+            server.sendmail(expediteur, destinataire, msg.as_string())
+        return True
+    except Exception as e:
+        st.error(f"Erreur d'envoi : {e}")
         return False
-    new_user = pd.DataFrame([[identifier, pwd, name, False]], columns=["identifier", "password", "full_name", "verified"])
-    new_user.to_csv(USER_DB, mode='a', header=False, index=False)
-    return True
 
-def verify_login(identifier, pwd):
-    df = pd.read_csv(USER_DB)
-    user_data = df[(df['identifier'] == identifier) & (df['password'] == pwd)]
-    return user_data if not user_data.empty else None
+# --- GESTION DE LA SESSION ---
+if 'connected' not in st.session_state: st.session_state['connected'] = False
+if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-def generer_pdf(nom, nature, montant, ref):
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=letter)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(300, 750, "REÇU DE PAIEMENT - KIKÉ SARÉ")
-    c.line(100, 740, 500, 740)
-    c.setFont("Helvetica", 12)
-    c.drawString(100, 700, f"Date : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-    c.drawString(100, 680, f"Client : {nom}")
-    c.drawString(100, 660, f"Nature : {nature}")
-    c.drawString(100, 640, f"Montant : {montant:,} GNF")
-    c.drawString(100, 620, f"Référence : {ref}")
-    c.save()
-    buf.seek(0)
-    return buf
-
-# --- GESTION DES SESSIONS ---
-if 'connected' not in st.session_state:
-    st.session_state['connected'] = False
-if 'verifying' not in st.session_state:
-    st.session_state['verifying'] = False
-
-# --- INTERFACE ---
+# --- INTERFACE UTILISATEUR ---
 if not st.session_state['connected']:
-    # --- MODIFICATION ICI : TITRE AVEC DRAPEAU GUINÉEN ---
     st.markdown("<h1 style='text-align: center;'>🇬🇳 Bienvenue sur Kiké Saré</h1>", unsafe_allow_html=True)
     
+    # ÉCRAN DE VÉRIFICATION DU CODE
     if st.session_state['verifying']:
-        st.info(f"📩 Code de validation envoyé à : {st.session_state.get('temp_user', 'votre contact')}")
-        st.write("*(Simulation : Utilisez le code **123456**)*")
-        input_code = st.text_input("Entrez le code")
-        if st.button("Valider mon compte"):
-            if input_code == "123456":
-                st.success("Compte validé ! Connectez-vous.")
-                st.session_state['verifying'] = False
-    else:
-        choice = st.tabs(["Se connecter", "Créer un compte"])
+        st.info(f"📩 Un code a été envoyé à : **{st.session_state['temp_email']}**")
         
-        with choice[0]:
-            with st.form("login"):
-                u = st.text_input("Email ou Numéro")
-                p = st.text_input("Mot de passe", type="password")
-                if st.form_submit_button("Connexion"):
-                    user_row = verify_login(u, p)
-                    if user_row is not None:
-                        st.session_state['connected'] = True
-                        st.session_state['user_info'] = user_row.iloc[0].to_dict()
-                        st.rerun()
-                    else:
-                        st.error("Identifiants incorrects.")
+        code_saisi = st.text_input("Entrez le code reçu par mail", placeholder="Ex: 123456")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Valider mon compte"):
+                if code_saisi == str(st.session_state['correct_code']):
+                    # Enregistrement final en base de données
+                    conn = sqlite3.connect('kikesare.db')
+                    c = conn.cursor()
+                    c.execute("INSERT OR REPLACE INTO users VALUES (?, ?, ?, 1)", 
+                              (st.session_state['temp_email'], st.session_state['temp_pwd'], st.session_state['temp_name']))
+                    conn.commit()
+                    conn.close()
+                    st.success("Compte validé ! Vous pouvez vous connecter.")
+                    st.session_state['verifying'] = False
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error("Code incorrect.")
+        
+        with col2:
+            if st.button("🔄 Renvoyer le code"):
+                nouveau_code = random.randint(100000, 999999)
+                if envoyer_mail_validation(st.session_state['temp_email'], nouveau_code):
+                    st.session_state['correct_code'] = nouveau_code
+                    st.toast("Un nouveau code a été envoyé !")
+                else:
+                    st.error("Échec du renvoi.")
 
-        with choice[1]:
-            with st.form("signup"):
-                new_u = st.text_input("Email ou Numéro (Identifiant)")
-                new_n = st.text_input("Nom complet")
-                new_p1 = st.text_input("Mot de passe", type="password")
-                new_p2 = st.text_input("Confirmez le mot de passe", type="password")
-                if st.form_submit_button("S'inscrire"):
-                    if new_p1 == new_p2 and new_u and new_n:
-                        if create_account(new_u, new_p1, new_n):
+    # ÉCRAN D'INSCRIPTION / CONNEXION
+    else:
+        tab1, tab2 = st.tabs(["Connexion", "Créer un compte"])
+        
+        with tab2:
+            with st.form("form_inscription"):
+                new_email = st.text_input("Email (Saisissez votre vrai mail)")
+                new_name = st.text_input("Nom complet")
+                new_pwd = st.text_input("Mot de passe", type="password")
+                submit = st.form_submit_button("S'inscrire")
+                
+                if submit:
+                    if "@" in new_email and len(new_pwd) > 4:
+                        code_genere = random.randint(100000, 999999)
+                        if envoyer_mail_validation(new_email, code_genere):
+                            st.session_state['temp_email'] = new_email
+                            st.session_state['temp_name'] = new_name
+                            st.session_state['temp_pwd'] = new_pwd
+                            st.session_state['correct_code'] = code_genere
                             st.session_state['verifying'] = True
-                            st.session_state['temp_user'] = new_u
                             st.rerun()
-                        else:
-                            st.error("Identifiant déjà utilisé.")
                     else:
-                        st.error("Erreur : Mots de passe différents ou champs vides.")
+                        st.warning("Veuillez entrer un email valide et un mot de passe de plus de 4 caractères.")
 
+        with tab1:
+            # Code de connexion simplifié pour la démo
+            email_log = st.text_input("Email")
+            pwd_log = st.text_input("Mot de passe", type="password", key="login_pwd")
+            if st.button("Se connecter"):
+                conn = sqlite3.connect('kikesare.db')
+                c = conn.cursor()
+                c.execute("SELECT * FROM users WHERE email=? AND password=? AND verified=1", (email_log, pwd_log))
+                user = c.fetchone()
+                conn.close()
+                if user:
+                    st.session_state['connected'] = True
+                    st.session_state['user_name'] = user[2]
+                    st.rerun()
+                else:
+                    st.error("Identifiants incorrects ou compte non vérifié.")
+
+# APPLICATION PRINCIPALE (APPRÈS CONNEXION)
 else:
-    # --- APPLICATION CONNECTÉE ---
-    with st.sidebar:
-        st.title("🇬🇳 Kiké Saré")
-        st.write(f"Utilisateur : **{st.session_state['user_info']['full_name']}**")
-        if st.button("Déconnexion"):
-            st.session_state['connected'] = False
-            st.rerun()
-
-    st.header("Effectuer un paiement")
-    
-    with st.form("pay"):
-        nat = st.selectbox("Nature", ["Loyer", "Scolarité", "EDG/SEG"])
-        mt = st.number_input("Montant (GNF)", min_value=0)
-        ref = st.text_input("Référence")
-        submit = st.form_submit_button("Valider")
-
-    if submit:
-        if mt > 0 and ref:
-            st.success("✅ Paiement validé !")
-            pdf = generer_pdf(st.session_state['user_info']['full_name'], nat, mt, ref)
-            st.download_button("📥 Télécharger le Reçu", pdf, f"recu_{ref}.pdf", "application/pdf")
-            st.balloons()
-        else:
-            st.error("Veuillez remplir tous les champs correctement.")
+    st.sidebar.success(f"Connecté : {st.session_state['user_name']}")
+    if st.sidebar.button("Déconnexion"):
+        st.session_state['connected'] = False
+        st.rerun()
+        
+    st.title("💳 Plateforme de Paiement Kiké Saré")
+    # Ajoutez ici votre formulaire de paiement réel
