@@ -16,7 +16,6 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
-    # Création des tables si elles n'existent pas (Évite OperationalError)
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (identifier TEXT PRIMARY KEY, password TEXT, full_name TEXT, type TEXT, verified INTEGER)''')
     c.execute('''CREATE TABLE IF NOT EXISTS echeances 
@@ -33,6 +32,9 @@ if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
 if not st.session_state['connected']:
+    # --- AFFICHAGE DU LOGO AU DÉBUT ---
+    logo_path = "kikesare_logo.png" # Assurez-vous que le fichier "kikesare_logo.png" est dans le même dossier que votre app.py
+    st.image(logo_path, width=300, caption="Kiké Saré - La Fintech Guinéenne") 
     st.markdown("<h1 style='text-align: center; color: #ce1126;'>KIKÉ SARÉ</h1>", unsafe_allow_html=True)
     
     if st.session_state['verifying']:
@@ -70,7 +72,8 @@ if not st.session_state['connected']:
                 if st.form_submit_button("🚀 S'inscrire"):
                     if p1 == p2 and len(p1) >= 6:
                         code = random.randint(100000, 999999)
-                        # Logique d'envoi mail ici...
+                        # Assurez-vous que la fonction envoyer_code_validation est bien définie ici ou importée
+                        # if envoyer_code_validation(id_u, code): # Décommenter si fonction mail active
                         st.session_state.update({'temp_id': id_u, 'temp_pwd': p1, 'temp_name': nom, 'temp_type': "Business", 'correct_code': code, 'verifying': True})
                         st.rerun()
 
