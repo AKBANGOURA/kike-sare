@@ -82,11 +82,9 @@ if not st.session_state['connected']:
                 else: st.error("Identifiants incorrects ou compte non vérifié.")
 
         with tab2:
-            # 1. LE CHOIX DU TYPE EN PREMIER
             u_role = st.radio("Vous souhaitez créer un compte :", ["Particulier", "Entrepreneur (Entreprise/Commerce)"], horizontal=True)
             
             with st.form("inscription_form"):
-                # 2. CHAMPS CONDITIONNELS
                 if u_role == "Particulier":
                     prenom = st.text_input("Prénom")
                     nom = st.text_input("Nom")
@@ -97,8 +95,6 @@ if not st.session_state['connected']:
                     siret_val = st.text_input("Numéro SIRET / RCCM")
                 
                 email_ins = st.text_input("Votre Email (pour validation)")
-                
-                # 3. DOUBLE MOT DE PASSE
                 p1 = st.text_input("Mot de passe", type="password")
                 p2 = st.text_input("Confirmez le mot de passe", type="password")
                 
@@ -137,10 +133,20 @@ else:
                 montant = st.number_input("Montant (GNF)", min_value=1000)
             with col_b:
                 moyen = st.radio("Moyen de paiement :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
+                
+                # --- RÉINTÉGRATION DU DÉPLI CONDITIONNEL ---
+                if moyen == "Carte Visa":
+                    st.text_input("💳 Numéro de la carte")
+                    c_col1, c_col2 = st.columns(2)
+                    c_col1.text_input("📅 Expiration (MM/AA)")
+                    c_col2.text_input("🔒 CVV", type="password")
+                else:
+                    st.text_input("📱 Numéro à débiter", placeholder="622...")
+                
                 modalite = st.selectbox("Modalité", ["Comptant", "Échelonné (2 fois)", "Échelonné (3 fois)"])
             
             if st.button("💎 Valider le Règlement"):
-                st.balloons(); st.success(f"Paiement de {montant} GNF validé pour {service} !")
+                st.balloons(); st.success(f"Paiement de {montant} GNF validé via {moyen} pour {service} !")
 
     # --- ESPACE ENTREPRENEUR GÉNÉRIQUE ---
     else:
@@ -150,7 +156,6 @@ else:
         with t_stats:
             st.subheader(f"Statistiques financières de {st.session_state['user_name']}")
             c1, c2, c3 = st.columns(3)
-            # Valeurs simulées pour l'interface
             c1.metric("Total encaissé", "0 GNF", delta="Nouveau")
             c2.metric("Transactions", "0")
             c3.metric("Moyenne/Client", "0 GNF")
