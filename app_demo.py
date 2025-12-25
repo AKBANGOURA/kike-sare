@@ -39,18 +39,17 @@ init_db()
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. AFFICHAGE DU LOGO (Soleil + Argent) ---
+# --- 4. AFFICHAGE DU LOGO DEMANDÉ (SOLEIL + ARGENT) ---
 def display_header():
-    # URL d'une image correspondant à votre logo (Soleil et Argent)
-    logo_url = "https://cdn-icons-png.flaticon.com/512/3931/3931365.png" # Icône Soleil/Économie
-    
-    st.markdown(f"""
+    # Utilisation d'icônes stables pour garantir l'affichage du soleil et des billets
+    st.markdown("""
         <div style='text-align: center;'>
-            <img src='{logo_url}' width='150' style='margin-bottom: 10px;'>
-            <h1 style='color:#ce1126; margin-top:0; margin-bottom:0;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:20px;'>L'argent au service de votre avenir</p>
+            <div style='font-size: 80px; line-height: 1;'>☀️</div>
+            <div style='font-size: 40px; margin-top: -50px; margin-left: 20px;'>💸</div>
+            <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:18px;'>L'argent au service de votre avenir</p>
             <p style='color:#666; font-style: italic;'>Payez vos mensualités en toute sécurité !</p>
-            <hr style='border: 1px solid #f0f2f6; width: 50%; margin: auto; margin-bottom: 20px;'>
+            <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
         </div>
     """, unsafe_allow_html=True)
 
@@ -101,30 +100,44 @@ if not st.session_state['connected']:
 # --- 6. ESPACES UTILISATEURS ---
 else:
     with st.sidebar:
-        # Mini logo dans la barre latérale
-        st.markdown("<div style='text-align:center;'><img src='https://cdn-icons-png.flaticon.com/512/3931/3931365.png' width='80'></div>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align:center;'>☀️💸</h2>", unsafe_allow_html=True)
         st.write(f"### {st.session_state['user_name']}")
         if st.button("🔌 Déconnexion"): st.session_state['connected'] = False; st.rerun()
 
     if st.session_state['user_type'] == "Particulier":
-        st.title("💳 Effectuer un Règlement")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            service = st.selectbox("Payer pour :", ["🎓 Frais de Scolarité", "🏠 Loyer", "💡 Facture EDG/SEG", "🛍️ Achat Commerçant"])
-            montant = st.number_input("Montant (GNF)", min_value=1000)
-        with col_b:
-            moyen = st.radio("Moyen de paiement :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
-            if moyen == "Carte Visa":
-                st.text_input("💳 N° de Carte")
-                st.text_input("🔒 CVV", type="password")
-            else:
-                st.text_input("📱 Numéro de téléphone", placeholder="622...")
-        
-        if st.button("💎 Valider le Paiement"):
-            with st.spinner('Validation en cours...'):
-                time.sleep(2)
-                st.balloons(); st.success(f"Paiement de {montant} GNF validé !")
+        st.title("📱 Mon Portefeuille de Paiement")
+        t_pay, t_hist = st.tabs(["💳 Effectuer un Règlement", "📜 Historique"])
+        with t_pay:
+            st.subheader("Nouvelle transaction")
+            col_a, col_b = st.columns(2)
+            with col_a:
+                service = st.selectbox("Payer pour :", ["🎓 Frais de Scolarité", "🏠 Loyer", "💡 Facture EDG/SEG", "🛍️ Achat Commerçant"])
+                ref = st.text_input("Référence (N° Facture / Étudiant)")
+                montant = st.number_input("Montant (GNF)", min_value=1000)
+            with col_b:
+                moyen = st.radio("Moyen de paiement :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
+                if moyen == "Carte Visa":
+                    st.text_input("💳 N° de la carte")
+                    c_col1, c_col2 = st.columns(2)
+                    c_col1.text_input("📅 Expiration (MM/AA)")
+                    c_col2.text_input("🔒 CVV", type="password")
+                else:
+                    st.text_input("📱 Numéro à débiter", placeholder="622...")
+                modalite = st.selectbox("Modalité", ["Comptant", "Échelonné (2 fois)", "Échelonné (3 fois)"])
+            
+            if st.button("💎 Valider le Règlement"):
+                with st.spinner('Traitement en cours...'):
+                    time.sleep(2)
+                    st.balloons(); st.success(f"Paiement de {montant} GNF validé !")
 
     else:
-        st.title(f"💼 Business : {st.session_state['user_name']}")
-        st.metric("Total des revenus collectés", "0 GNF")
+        st.title(f"💼 Dashboard Business : {st.session_state['user_name']}")
+        t_stats, t_fond = st.tabs(["📈 Mes Revenus", "💰 Réception des fonds"])
+        with t_stats:
+            st.metric("Total encaissé", "0 GNF")
+            st.info("Le graphique des revenus s'affichera ici dès la première transaction.")
+        with t_fond:
+            with st.form("config_recep"):
+                st.selectbox("Canal de réception", ["Orange Money Business", "MTN MoMo Business", "Compte Bancaire"])
+                st.text_input("Numéro ou RIB de réception")
+                if st.form_submit_button("💾 Enregistrer"): st.success("Paramètres mis à jour.")
