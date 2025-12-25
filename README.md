@@ -1,5 +1,6 @@
 # Kiké Saré 🇬🇳
 **Kiké Saré** (le paiement du mois) est une application de gestion de transactions sécurisée adaptée au contexte guinéen.
+le lien https://kike-sare-guinee.streamlit.app/
 
 ## Fonctionnalités
 - 🔐 Authentification sécurisée (Mots de passe robustes & Validation par code).
