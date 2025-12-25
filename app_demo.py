@@ -5,8 +5,8 @@ import smtplib
 from email.message import EmailMessage
 
 # --- 1. CONFIGURATION MAIL (Paramètres à configurer) ---
-EMAIL_SENDER = "votre-mail@gmail.com" 
-EMAIL_PASSWORD = "votre-mot-de-passe-application" 
+EMAIL_SENDER = "bangourakallaa@gmail.com" 
+EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
 
 def send_validation_mail(receiver, code):
     msg = EmailMessage()
