@@ -9,7 +9,7 @@ from email.message import EmailMessage
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
-    page_title="Kiké Saré",  # Nom qui apparaîtra sous l'icône sur le téléphone
+    page_title="KikéSaré",  # Nom qui apparaîtra sous l'icône sur le téléphone
     page_icon=logo_url, 
     layout="centered"
 )
@@ -18,7 +18,7 @@ st.set_page_config(
 st.markdown(
     f"""
     <head>
-        <meta name="apple-mobile-web-app-title" content="Kiké Saré">
+        <meta name="apple-mobile-web-app-title" content="KikéSaré">
         <link rel="apple-touch-icon" href="{logo_url}">
         <meta name="apple-mobile-web-app-capable" content="yes">
     </head>
@@ -51,8 +51,8 @@ EMAIL_PASSWORD = "tyqlqacsgwpoeiin"
 
 def send_validation_mail(receiver, code):
     msg = EmailMessage()
-    msg.set_content(f"Bienvenue sur Kiké Saré ! Votre code de validation est : {code}")
-    msg['Subject'] = "Validation de compte - Kiké Saré"
+    msg.set_content(f"Bienvenue sur KikéSaré ! Votre code de validation est : {code}")
+    msg['Subject'] = "Validation de compte - KikéSaré"
     msg['From'] = EMAIL_SENDER
     msg['To'] = receiver
     try:
@@ -81,7 +81,7 @@ def display_header():
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     st.image(logo_url, width=150) 
     st.markdown(f"""
-        <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KIKÉ SARÉ</h1>
+        <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KikéSaré</h1>
         <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom:0;'>Payez vos mensualités en toute sécurité !</p>
         <p style='color:#666; font-style: italic; font-size:14px;'>La FinTech qui change votre monde</p>
         <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
@@ -171,5 +171,6 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
