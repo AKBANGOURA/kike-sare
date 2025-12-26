@@ -65,6 +65,23 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# --- 3. FONCTION D'AFFICHAGE DU LOGO ET TITRES (CENTRÉS) ---
+def display_header():
+    # Création de colonnes pour forcer le logo au milieu
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        st.image(logo_url, use_container_width=True)
+    
+    # Titre et Slogan avec centrage HTML forcé
+    st.markdown(f"""
+        <div style='text-align: center;'>
+            <h1 style='color:#ce1126; margin-bottom: 5px;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>Payez vos mensualités en toute sécurité !</p>
+            <p style='color:#666; font-style: italic; font-size:14px;'>La FinTech qui change votre monde</p>
+            <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
+        </div>
+    """, unsafe_allow_html=True)
+
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
