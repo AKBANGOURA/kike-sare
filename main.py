@@ -5,31 +5,46 @@ import smtplib
 import time
 from email.message import EmailMessage
 
-# --- 1. CONFIGURATION DE LA PAGE (Onglet du navigateur) ---
-# On utilise votre lien GitHub pour l'icône de l'onglet
+# --- 1. CONFIGURATION DE LA PAGE ---
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
-    page_title="KikéSaré",
+    page_title="Kiké Saré",  # Nom qui apparaîtra sous l'icône sur le téléphone
     page_icon=logo_url, 
     layout="centered"
 )
 
-# --- 2. STYLE CSS (Pour cacher les menus Streamlit) ---
+# --- 2. CSS PERSONNALISÉ ---
 st.markdown(
     f"""
+    <head>
+        <meta name="apple-mobile-web-app-title" content="Kiké Saré">
+        <link rel="apple-touch-icon" href="{logo_url}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+    </head>
     <style>
+        /* Conteneur principal */
+        .main .block-container {{
+            max-width: 650px;
+            padding-top: 1rem;
+            margin: auto;
+        }}
+        
+        /* Taille du logo fixée à 80px */
+        .stImage > img {{
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80px; 
+        }}
+
+        /* Le reste de votre CSS (boutons, header caché, etc.) */
         header {{visibility: hidden;}}
         footer {{visibility: hidden;}}
-        #MainMenu {{visibility: hidden;}}
-        .stAppDeployButton {{display:none;}}
-        .block-container {{ padding-top: 1rem; }}
-        div.stButton > button {{ width: 100%; border-radius: 10px; font-weight: bold; }}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 # --- 3. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
@@ -156,4 +171,5 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
