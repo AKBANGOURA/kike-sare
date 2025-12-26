@@ -5,32 +5,78 @@ import smtplib
 import time
 from email.message import EmailMessage
 
+import streamlit as st
+
 # --- 1. CONFIGURATION DE LA PAGE ---
-# Assurez-vous d'utiliser le lien "raw" de GitHub
-logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
+# L'ajout de ?v=2 force le navigateur à mettre à jour l'icône immédiatement
+logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png?v=2"
 
 st.set_page_config(
-    page_title="KikéSaré",
-    page_icon=logo_url, # C'est ici que Streamlit définit le favicon
+    page_title="Kiké Saré", # Nom affiché sous l'icône sur le téléphone
+    page_icon=logo_url,      # Favicon pour le navigateur
     layout="centered"
 )
 
-# --- 2. INJECTION DES METADONNÉES MOBILES ---
+# --- 2. INJECTION DES METADONNÉES MOBILES & CSS ---
 st.markdown(f"""
     <head>
         <link rel="apple-touch-icon" href="{logo_url}">
         <link rel="icon" type="image/png" href="{logo_url}">
+        <meta name="apple-mobile-web-app-title" content="Kiké Saré">
         <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
     </head>
     <style>
-        /* Masquer le logo Streamlit en haut à gauche (le "S" rouge) */
-        #MainMenu {{visibility: hidden;}}
+        /* Masquage des éléments Streamlit pour un look App Native */
         header {{visibility: hidden;}}
         footer {{visibility: hidden;}}
+        #MainMenu {{visibility: hidden;}}
+        .stAppDeployButton {{display:none;}}
+
+        /* Conteneur principal centré */
+        .main .block-container {{
+            max-width: 650px;
+            padding-top: 2rem;
+            margin: auto;
+        }}
+        
+        /* Taille du logo fixée à 80px et centré */
+        .stImage > img {{
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80px; 
+        }}
+
+        /* Style des boutons alignés à gauche */
+        div.stButton > button {{
+            border-radius: 10px;
+            font-weight: bold;
+            padding-left: 25px;
+            padding-right: 25px;
+            width: auto;
+        }}
     </style>
 """, unsafe_allow_html=True)
 
+# --- 3. FONCTION D'AFFICHAGE DE L'EN-TÊTE ---
+def display_header():
+    # Colonnes pour stabiliser le logo au milieu
+    c1, c2, c3 = st.columns([2, 1, 2])
+    with c2:
+        st.image(logo_url) 
+    
+    st.markdown(f"""
+        <div style='text-align: center;'>
+            <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change votre quotidien</p>
+            <p style='color:#666; font-style: italic; font-size: 13px;'>Payez vos mensualités en toute sécurité !</p>
+            <hr style='border: 0.5px solid #eee; width: 100%; margin: 15px auto;'>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Appel de l'en-tête
+display_header()
 # --- 2. CSS PERSONNALISÉ ---
 st.markdown(
     f"""
@@ -213,6 +259,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
