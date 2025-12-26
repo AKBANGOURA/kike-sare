@@ -13,76 +13,44 @@ st.set_page_config(
     page_icon=logo_url,
     layout="centered" 
 )
-# --- 2. CSS AVANCÉ POUR LE CENTRAGE TOTAL ---
+
+# --- 2. CSS PERSONNALISÉ (En-tête centré, le reste à gauche) ---
 st.markdown(
     f"""
     <style>
-        /* Centre le bloc principal sur l'écran */
+        /* Conteneur principal */
         .main .block-container {{
-            max-width: 600px;
-            padding-top: 2rem;
+            max-width: 700px;
+            padding-top: 1rem;
             margin: auto;
-            text-align: center;
         }}
         
-        /* Centre les images */
+        /* Centrage automatique du logo */
         .stImage > img {{
             display: block;
             margin-left: auto;
             margin-right: auto;
         }}
 
-        /* Centre les labels de texte (Email, Mot de passe) */
-        .stTextInput label, .stSelectbox label, .stRadio label {{
-            display: block;
-            text-align: center;
-            width: 100%;
-        }}
-
-        /* Centre les boutons et les arrondit */
-        div.stButton > button {{
-            width: 100%;
-            border-radius: 10px;
-            font-weight: bold;
-            margin: auto;
-            display: block;
-        }}
-
-        /* Masque les éléments inutiles */
+        /* Masquer les éléments de déploiement Streamlit */
         header {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display:none;}}
 
-        /* Centre les boutons radio horizontalement */
-        [data-testid="stMarkdownContainer"] p {{
-            text-align: center;
-        }}
-        div[data-testid="stHorizontalBlock"] {{
-            justify-content: center;
+        /* Style des boutons (alignés à gauche par défaut) */
+        div.stButton > button {{
+            border-radius: 10px;
+            font-weight: bold;
+            padding-left: 30px;
+            padding-right: 30px;
+            width: auto;
         }}
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- 3. FONCTION D'AFFICHAGE DU LOGO ET TITRES (CENTRÉS) ---
-def display_header():
-    # Création de colonnes pour forcer le logo au milieu
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.image(logo_url, use_container_width=True)
-    
-    # Titre et Slogan avec centrage HTML forcé
-    st.markdown(f"""
-        <div style='text-align: center;'>
-            <h1 style='color:#ce1126; margin-bottom: 5px;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>Payez vos mensualités en toute sécurité !</p>
-            <p style='color:#666; font-style: italic; font-size:14px;'>La FinTech qui change votre monde</p>
-            <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
-        </div>
-    """, unsafe_allow_html=True)
-
-# --- 1. CONFIGURATION MAIL ---
+# --- 3. FONCTIONS TECHNIQUES (MAIL & DB) ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
 
@@ -99,7 +67,6 @@ def send_validation_mail(receiver, code):
         return True
     except Exception: return False
 
-# --- 2. BASE DE DONNÉES ---
 def init_db():
     conn = sqlite3.connect('kikesare.db', check_same_thread=False)
     c = conn.cursor()
@@ -109,24 +76,28 @@ def init_db():
 
 init_db()
 
-# --- 3. ÉTAT DE LA SESSION ---
+# --- 4. ÉTAT DE LA SESSION ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
-    
-# --- 4. FONCTION D'AFFICHAGE DU LOGO (Celle qui manquait) ---
+
+# --- 5. FONCTION D'AFFICHAGE DU LOGO ET TITRES (CENTRÉS) ---
 def display_header():
-    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-    # On utilise votre image GitHub pour un rendu professionnel
-    st.image(logo_url, width=150) 
+    # Utilisation de colonnes pour forcer le logo au milieu
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        st.image(logo_url, use_container_width=True)
+    
+    # Texte centré via HTML
     st.markdown(f"""
-        <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KikéSaré</h1>
-        <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom:0;'>La FinTech qui change votre quotidien</p>
-        <p style='color:#666; font-style: italic; font-size:14px;'>Payez vos mensualités en toute sécurité!</p>
-        <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
+        <div style='text-align: center;'>
+            <h1 style='color:#ce1126; margin-bottom: 5px;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>La FinTech qui change votre quotidien</p>
+            <p style='color:#666; font-style: italic; font-size:14px;'>Payez vos mensualités en toute sécurité !</p>
+            <hr style='border: 0.5px solid #eee; width: 100%; margin: 20px auto;'>
         </div>
     """, unsafe_allow_html=True)
 
-# --- 5. LOGIQUE D'ACCÈS (CONNEXION & INSCRIPTION) ---
+# --- 6. LOGIQUE D'ACCÈS (CONNEXION & INSCRIPTION) ---
 if not st.session_state['connected']:
     display_header()
     
@@ -143,6 +114,7 @@ if not st.session_state['connected']:
                 st.success("Compte activé !"); st.session_state['verifying'] = False; st.rerun()
     else:
         tab1, tab2 = st.tabs(["🔐 Connexion", "📝 Inscription"])
+        
         with tab1:
             e_log = st.text_input("Email", key="l_email")
             p_log = st.text_input("Mot de passe", type="password", key="l_pwd")
@@ -156,9 +128,8 @@ if not st.session_state['connected']:
                 else: st.error("Identifiants incorrects.")
 
         with tab2:
-            u_role = st.radio("Vous souhaitez créer un compte :", ["Particulier", "Entrepreneur"], horizontal=True)
+            u_role = st.radio("Type de compte :", ["Particulier", "Entrepreneur"], horizontal=True)
             with st.form("ins_form"):
-                # CORRECTION DES CHAMPS SELON LE TYPE DE COMPTE
                 if u_role == "Particulier":
                     prenom = st.text_input("Prénom")
                     nom = st.text_input("Nom")
@@ -187,10 +158,10 @@ if not st.session_state['connected']:
                             st.rerun()
                         else: st.error("Erreur d'envoi du mail.")
 
-# --- 6. ESPACES UTILISATEURS ---
+# --- 7. ESPACES UTILISATEURS (CONNECTÉS) ---
 else:
     with st.sidebar:
-        st.markdown("<h2 style='text-align:center;'>☀️💸</h2>", unsafe_allow_html=True)
+        st.image(logo_url, width=100)
         st.write(f"### {st.session_state['user_name']}")
         st.caption(f"Profil : {st.session_state['user_type']}")
         if st.button("🔌 Déconnexion"): st.session_state['connected'] = False; st.rerun()
@@ -221,6 +192,7 @@ else:
                     st.balloons(); st.success(f"Paiement de {montant} GNF validé !")
 
     else:
-        st.title(f"💼 Dashboard Business : {st.session_state['user_name']}")
+        st.title(f"💼 Dashboard Business")
+        st.subheader(f"Bienvenue, {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
         st.info("Le graphique des revenus s'affichera ici dès la première transaction.")
