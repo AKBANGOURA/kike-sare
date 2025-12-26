@@ -6,13 +6,30 @@ import time
 from email.message import EmailMessage
 
 # --- 1. CONFIGURATION DE LA PAGE ---
+# Assurez-vous d'utiliser le lien "raw" de GitHub
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
-    page_title="KikéSaré",  # Nom qui apparaîtra sous l'icône sur le téléphone
-    page_icon=logo_url, 
+    page_title="KikéSaré",
+    page_icon=logo_url, # C'est ici que Streamlit définit le favicon
     layout="centered"
 )
+
+# --- 2. INJECTION DES METADONNÉES MOBILES ---
+st.markdown(f"""
+    <head>
+        <link rel="apple-touch-icon" href="{logo_url}">
+        <link rel="icon" type="image/png" href="{logo_url}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    </head>
+    <style>
+        /* Masquer le logo Streamlit en haut à gauche (le "S" rouge) */
+        #MainMenu {{visibility: hidden;}}
+        header {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 2. CSS PERSONNALISÉ ---
 st.markdown(
@@ -196,6 +213,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
