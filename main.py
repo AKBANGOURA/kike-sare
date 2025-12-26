@@ -86,16 +86,15 @@ st.markdown(f"""
 
 # --- 3. FONCTION D'AFFICHAGE DE L'EN-TÊTE ---
 def display_header():
-    # Colonnes pour stabiliser le logo au milieu
+    # On évite st.title ou st.header qui créent les icônes de lien indésirables
     c1, c2, c3 = st.columns([2, 1, 2])
     with c2:
-        st.image(logo_url) 
+        st.image(logo_url, width=80) 
     
     st.markdown(f"""
         <div style='text-align: center;'>
-        # À la place de st.title("KikéSaré") ou st.header("KikéSaré")
-            st.write(f"<h1 style='text-align: center; color:#ce1126; margin:0;'>KikéSaré</h1>", unsafe_allow_html=True)
-            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change tout</p>
+            <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KIKÉ SARÉ</h1>
+            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change votre quotidien</p>
             <p style='color:#666; font-style: italic; font-size: 13px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 15px auto;'>
         </div>
@@ -301,6 +300,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
