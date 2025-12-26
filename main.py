@@ -12,7 +12,7 @@ import streamlit as st
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png?v=2"
 
 st.set_page_config(
-    page_title="Kiké Saré", # Nom affiché sous l'icône sur le téléphone
+    page_title="KikéSaré", # Nom affiché sous l'icône sur le téléphone
     page_icon=logo_url,      # Favicon pour le navigateur
     layout="centered"
 )
@@ -22,7 +22,7 @@ st.markdown(f"""
     <head>
         <link rel="apple-touch-icon" href="{logo_url}">
         <link rel="icon" type="image/png" href="{logo_url}">
-        <meta name="apple-mobile-web-app-title" content="Kiké Saré">
+        <meta name="apple-mobile-web-app-title" content="KikéSaré">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
     </head>
@@ -69,7 +69,7 @@ def display_header():
     st.markdown(f"""
         <div style='text-align: center;'>
             <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change votre quotidien</p>
+            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change tout</p>
             <p style='color:#666; font-style: italic; font-size: 13px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 15px auto;'>
         </div>
@@ -259,6 +259,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
