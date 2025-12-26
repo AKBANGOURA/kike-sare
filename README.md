@@ -1,3 +1,15 @@
+---
+title: KikéSaré
+emoji: 💸
+colorFrom: green
+colorTo: red
+sdk: streamlit
+app_file: main.py
+pinned: false
+# Cette option aide à garder l'affichage propre
+header: mini 
+---
+
 # Kiké Saré 🇬🇳
 **Kiké Saré** (le paiement du mois) est une application de gestion de transactions sécurisée adaptée au contexte guinéen.
 le lien https://kike-sare-guinee.streamlit.app/
