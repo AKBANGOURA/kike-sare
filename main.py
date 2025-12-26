@@ -18,6 +18,31 @@ st.set_page_config(
 )
 
 # --- 2. INJECTION DES METADONNÉES MOBILES & CSS ---
+st.markdown("""
+    <style>
+        /* Masquage agressif des éléments Streamlit */
+        #MainMenu, header, footer, .stDeployButton, .stActionButton {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Supprime l'espace blanc en haut de la page */
+        .stApp {
+            margin-top: -60px;
+        }
+
+        /* Supprime les ancres de lien sur tous les titres */
+        [data-testid="stHeaderActionElements"] {
+            display: none !important;
+        }
+
+        /* Masque le bouton de déploiement en bas à droite (votre photo) */
+        button[data-testid="stAppDeployButton"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.markdown(f"""
     <head>
         <link rel="apple-touch-icon" href="{logo_url}">
@@ -275,6 +300,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
