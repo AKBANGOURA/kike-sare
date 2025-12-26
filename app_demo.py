@@ -92,7 +92,7 @@ def display_header():
     st.markdown(f"""
         <div style='text-align: center;'>
             <h1 style='color:#ce1126; margin-bottom: 5px;'>KikéSaré</h1>
-            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>La FinTech qui change votre monde</p>
+            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>La FinTech qui change tout</p>
             <p style='color:#666; font-style: italic; font-size:14px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 20px auto;'>
         </div>
