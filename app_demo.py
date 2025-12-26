@@ -14,42 +14,42 @@ st.set_page_config(
     layout="centered" 
 )
 
-# --- 2. CSS PERSONNALISÉ (En-tête centré, le reste à gauche) ---
+# --- 2. CSS PERSONNALISÉ (Logo réduit et En-tête centré) ---
 st.markdown(
     f"""
     <style>
         /* Conteneur principal */
         .main .block-container {{
-            max-width: 700px;
+            max-width: 650px;
             padding-top: 1rem;
             margin: auto;
         }}
         
-        /* Centrage automatique du logo */
+        /* Centrage et taille du logo */
         .stImage > img {{
             display: block;
             margin-left: auto;
             margin-right: auto;
+            max-width: 120px; /* Taille réduite ici */
         }}
 
-        /* Masquer les éléments de déploiement Streamlit */
+        /* Masquage des éléments Streamlit */
         header {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display:none;}}
 
-        /* Style des boutons (alignés à gauche par défaut) */
+        /* Style des boutons alignés à gauche */
         div.stButton > button {{
             border-radius: 10px;
             font-weight: bold;
-            padding-left: 30px;
-            padding-right: 30px;
+            padding-left: 25px;
+            padding-right: 25px;
             width: auto;
         }}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 # --- 3. FONCTIONS TECHNIQUES (MAIL & DB) ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
