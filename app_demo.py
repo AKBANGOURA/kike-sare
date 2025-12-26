@@ -83,8 +83,6 @@ def display_header():
         </div>
     """, unsafe_allow_html=True)
 
-# --- APPEL DE L'EN-TÊTE ---
-display_header()
 
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
