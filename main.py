@@ -40,12 +40,12 @@ st.markdown(f"""
             margin: auto;
         }}
         
-        /* Taille du logo fixée à 80px et centré */
+        /* Taille du logo fixée à 40px et centré */
         .stImage > img {{
             display: block;
             margin-left: auto;
             margin-right: auto;
-            width: 80px; 
+            width: 40px; 
         }}
 
         /* Style des boutons alignés à gauche */
@@ -68,7 +68,7 @@ def display_header():
     
     st.markdown(f"""
         <div style='text-align: center;'>
-            <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KIKÉ SARÉ</h1>
+            <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KikéSaré</h1>
             <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change tout</p>
             <p style='color:#666; font-style: italic; font-size: 13px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 15px auto;'>
@@ -77,7 +77,7 @@ def display_header():
 
 # Appel de l'en-tête
 display_header()
-# --- 2. CSS PERSONNALISÉ ---
+# --- 2. CSS PERSONNALISÉ NETTOYÉ ---
 st.markdown(
     f"""
     <head>
@@ -86,14 +86,26 @@ st.markdown(
         <meta name="apple-mobile-web-app-capable" content="yes">
     </head>
     <style>
-        /* Conteneur principal */
+        /* 1. Masquer les éléments de navigation Streamlit (icône lien et barre de déploiement) */
+        /* Cible l'icône "chaîne" à côté du titre et le bouton en bas à droite */
+        [data-testid="stHeaderActionElements"], .stAppDeployButton, .stActionButton {{
+            display: none !important;
+        }}
+        
+        /* Masquer le header et le footer natifs */
+        header, footer {{
+            visibility: hidden;
+            display: none;
+        }}
+
+        /* 2. Conteneur principal */
         .main .block-container {{
             max-width: 650px;
             padding-top: 1rem;
             margin: auto;
         }}
         
-        /* Taille du logo fixée à 80px */
+        /* 3. Taille du logo fixée à 80px (ou 40px selon votre préférence) */
         .stImage > img {{
             display: block;
             margin-left: auto;
@@ -101,9 +113,13 @@ st.markdown(
             width: 80px; 
         }}
 
-        /* Le reste de votre CSS (boutons, header caché, etc.) */
-        header {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
+        /* 4. Style des boutons pour éviter qu'ils ne prennent toute la largeur sur mobile */
+        div.stButton > button {{
+            border-radius: 10px;
+            font-weight: bold;
+            width: auto;
+            min-width: 150px;
+        }}
     </style>
     """,
     unsafe_allow_html=True
@@ -259,6 +275,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
