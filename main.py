@@ -72,11 +72,36 @@ def init_db():
 
 init_db()
 
-# --- 5. ÉTAT DE LA SESSION ---
+# --- 5 bis. NOTIFICATION D'INSTALLATION MOBILE ---
+def show_install_promotion():
+    # On vérifie si on a déjà montré la notification dans cette session
+    if 'promo_shown' not in st.session_state:
+        st.session_state['promo_shown'] = True
+        
+        with st.expander("📲 Installer Kiké Saré sur votre téléphone", expanded=True):
+            st.markdown("""
+                <div style='text-align: left; font-size: 14px;'>
+                    <strong>Pour une meilleure expérience :</strong><br>
+                    1. Cliquez sur l'icône de partage (iOS) ou les 3 points (Android).<br>
+                    2. Sélectionnez <b>'Sur l'écran d'accueil'</b> ou <b>'Installer'</b>.<br>
+                    ✨ L'icône Kiké Saré apparaîtra parmi vos applications !
+                </div>
+            """, unsafe_allow_html=True)
+            if st.button("J'ai compris"):
+                st.rerun()
+
+# --- MODIFICATION DE LA LOGIQUE D'ACCÈS ---
+if not st.session_state['connected']:
+    display_header()
+    show_install_promotion() # Appelez la fonction ici
+    
+    # ... reste de votre code de connexion/inscription
+
+# --- 6. ÉTAT DE LA SESSION ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 6. EN-TÊTE AVEC VOTRE LOGO GITHUB ---
+# --- 7. EN-TÊTE AVEC VOTRE LOGO GITHUB ---
 def display_header():
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     st.image(logo_url, width=150) 
@@ -88,7 +113,7 @@ def display_header():
         </div>
     """, unsafe_allow_html=True)
 
-# --- 7. CONNEXION ET INSCRIPTION ---
+# --- 8. CONNEXION ET INSCRIPTION ---
 if not st.session_state['connected']:
     display_header()
     
@@ -142,7 +167,7 @@ if not st.session_state['connected']:
                             st.rerun()
                         else: st.error("Erreur mail.")
 
-# --- 8. ESPACE APRÈS CONNEXION ---
+# --- 9. ESPACE APRÈS CONNEXION ---
 else:
     with st.sidebar:
         st.image(logo_url, width=100)
@@ -171,6 +196,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
