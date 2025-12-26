@@ -38,7 +38,19 @@ init_db()
 # --- 3. ÉTAT DE LA SESSION ---
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
-
+    
+# --- 4. FONCTION D'AFFICHAGE DU LOGO (Celle qui manquait) ---
+def display_header():
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+    # On utilise votre image GitHub pour un rendu professionnel
+    st.image(logo_url, width=150) 
+    st.markdown(f"""
+        <h1 style='color:#ce1126; margin-top:10px; margin-bottom:0;'>KikéSaré</h1>
+        <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom:0;'>La FinTech qui change votre quotidien</p>
+        <p style='color:#666; font-style: italic; font-size:14px;'>Payez vos mensualités en toute sécurité!</p>
+        <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- 5. LOGIQUE D'ACCÈS (CONNEXION & INSCRIPTION) ---
 if not st.session_state['connected']:
