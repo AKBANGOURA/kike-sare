@@ -93,7 +93,8 @@ def display_header():
     
     st.markdown(f"""
         <div style='text-align: center;'>
-            <h1 style='color:#ce1126; margin-top: 5px; margin-bottom: 0px;'>KikéSaré</h1>
+        # À la place de st.title("KikéSaré") ou st.header("KikéSaré")
+            st.write(f"<h1 style='text-align: center; color:#ce1126; margin:0;'>KikéSaré</h1>", unsafe_allow_html=True)
             <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom: 0px;'>La FinTech qui change tout</p>
             <p style='color:#666; font-style: italic; font-size: 13px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 15px auto;'>
@@ -300,6 +301,7 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
 
 
 
