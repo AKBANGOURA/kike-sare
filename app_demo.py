@@ -5,8 +5,15 @@ import smtplib
 import time
 from email.message import EmailMessage
 
-# --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="KikéSaré", page_icon="☀️", layout="centered")
+# 1. Définir le lien de votre logo GitHub
+logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
+
+# 2. Configurer la page avec le vrai logo
+st.set_page_config(
+    page_title="KikéSaré", 
+    page_icon=logo_url,  # Ici, on remplace "☀️" par le lien de votre logo
+    layout="centered"
+)
 
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
