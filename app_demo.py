@@ -14,7 +14,7 @@ st.set_page_config(
     layout="centered" 
 )
 
-# --- 2. CSS PERSONNALISÉ (Logo à 80px et En-tête centré) ---
+# --- 2. CSS PERSONNALISÉ (Logo à 40px et En-tête centré) ---
 st.markdown(
     f"""
     <style>
@@ -30,7 +30,7 @@ st.markdown(
             display: block;
             margin-left: auto;
             margin-right: auto;
-            width: 80px; /* Taille fixée à 80px */
+            width: 40px; /* Taille fixée à 40px */
         }}
 
         /* Masquage des éléments Streamlit */
