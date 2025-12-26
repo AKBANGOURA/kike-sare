@@ -10,7 +10,7 @@ from email.message import EmailMessage
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
-    page_title="Kiké Saré",
+    page_title="KikéSaré",
     page_icon=logo_url, 
     layout="centered"
 )
@@ -156,3 +156,4 @@ else:
     else:
         st.title(f"💼 Dashboard : {st.session_state['user_name']}")
         st.metric("Total encaissé", "0 GNF")
+
