@@ -6,7 +6,7 @@ import time
 from email.message import EmailMessage
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Kiké Saré", page_icon="☀️", layout="centered")
+st.set_page_config(page_title="KikéSaré", page_icon="☀️", layout="centered")
 
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
@@ -14,8 +14,8 @@ EMAIL_PASSWORD = "tyqlqacsgwpoeiin"
 
 def send_validation_mail(receiver, code):
     msg = EmailMessage()
-    msg.set_content(f"Bienvenue sur Kiké Saré ! Votre code de validation est : {code}")
-    msg['Subject'] = "Validation de compte - Kiké Saré"
+    msg.set_content(f"Bienvenue sur KikéSaré ! Votre code de validation est : {code}")
+    msg['Subject'] = "Validation de compte - KikéSaré"
     msg['From'] = EMAIL_SENDER
     msg['To'] = receiver
     try:
@@ -39,20 +39,6 @@ init_db()
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 4. AFFICHAGE DU LOGO (SOLEIL + BILLETS) ---
-def display_header():
-    # Intégration visuelle du logo Soleil Jaune et Billets Verts
-    st.markdown("""
-        <div style='text-align: center;'>
-            <div style='position: relative; display: inline-block; font-size: 80px;'>
-                ☀️<span style='position: absolute; top: 20px; left: 25px; font-size: 40px;'>💸</span>
-            </div>
-            <h1 style='color:#ce1126; margin-top:0px; margin-bottom:0;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:18px; margin-bottom:0;'>Payez vos mensualités en toute sécurité!</p>
-            <p style='color:#666; font-style: italic;'>La FinTech qui change votre monde</p>
-            <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
-        </div>
-    """, unsafe_allow_html=True)
 
 # --- 5. LOGIQUE D'ACCÈS (CONNEXION & INSCRIPTION) ---
 if not st.session_state['connected']:
