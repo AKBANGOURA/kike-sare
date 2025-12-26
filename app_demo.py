@@ -5,16 +5,46 @@ import smtplib
 import time
 from email.message import EmailMessage
 
-# 1. Définir le lien de votre logo GitHub
+# --- 1. CONFIGURATION DE LA PAGE ---
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
-# 2. Configurer la page avec le vrai logo
 st.set_page_config(
-    page_title="KikéSaré", 
-    page_icon=logo_url,  # Ici, on remplace "☀️" par le lien de votre logo
-    layout="centered"
+    page_title="Kiké Saré",
+    page_icon=logo_url,
+    layout="centered" # Indispensable pour éviter l'alignement à gauche
 )
 
+# --- 2. CSS POUR LE CENTRAGE ET LE DESIGN ---
+st.markdown(
+    f"""
+    <style>
+        /* Force le centrage de tout le contenu dans la page */
+        .block-container {{
+            text-align: center;
+            padding-top: 1rem;
+        }}
+        
+        /* Masque les menus Streamlit pour un look application mobile */
+        header {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display:none;}}
+        
+        /* Style des boutons pour qu'ils soient centrés et arrondis */
+        div.stButton > button {{
+            width: 100%;
+            border-radius: 10px;
+            font-weight: bold;
+        }}
+        
+        /* Centrage spécifique pour les radios et onglets */
+        .stRadio > div {{
+            display: flex;
+            justify-content: center;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
