@@ -5,7 +5,8 @@ import smtplib
 import time
 from email.message import EmailMessage
 
-# --- 1. CONFIGURATION DE LA PAGE ---
+# --- 1. CONFIGURATION DE LA PAGE (Onglet du navigateur) ---
+# On utilise votre lien GitHub pour l'icône de l'onglet
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
@@ -14,7 +15,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. PERSONNALISATION CSS ---
+# --- 2. STYLE CSS (Pour cacher les menus Streamlit) ---
 st.markdown(
     f"""
     <style>
@@ -60,7 +61,7 @@ init_db()
 if 'connected' not in st.session_state: st.session_state['connected'] = False
 if 'verifying' not in st.session_state: st.session_state['verifying'] = False
 
-# --- 6. EN-TÊTE ---
+# --- 6. EN-TÊTE AVEC VOTRE LOGO GITHUB ---
 def display_header():
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     st.image(logo_url, width=150) 
@@ -72,13 +73,13 @@ def display_header():
         </div>
     """, unsafe_allow_html=True)
 
-# --- 7. AUTHENTIFICATION ---
+# --- 7. CONNEXION ET INSCRIPTION ---
 if not st.session_state['connected']:
     display_header()
     
     if st.session_state['verifying']:
         st.info(f"📩 Code envoyé à : **{st.session_state['temp_id']}**")
-        code_s = st.text_input("Saisissez le code de validation")
+        code_s = st.text_input("Code de validation")
         if st.button("✅ Valider l'inscription"):
             if code_s == str(st.session_state['correct_code']):
                 conn = sqlite3.connect('kikesare.db')
@@ -100,15 +101,15 @@ if not st.session_state['connected']:
                 if u:
                     st.session_state.update({'connected': True, 'user_name': u[2], 'user_id': u[0], 'user_type': u[3]})
                     st.rerun()
-                else: st.error("Email ou mot de passe incorrect.")
+                else: st.error("Identifiants incorrects.")
 
         with tab2:
-            u_role = st.radio("Vous souhaitez créer un compte :", ["Particulier", "Entrepreneur"], horizontal=True)
+            u_role = st.radio("Type de compte :", ["Particulier", "Entrepreneur"], horizontal=True)
             with st.form("ins_form"):
                 if u_role == "Particulier":
-                    pnom = st.text_input("Prénom")
+                    prenom = st.text_input("Prénom")
                     nom = st.text_input("Nom")
-                    nom_final = f"{pnom} {nom}"
+                    nom_final = f"{prenom} {nom}"
                     siret_val = ""
                 else:
                     nom_final = st.text_input("Nom de l'Etablissement / Entreprise")
@@ -118,56 +119,40 @@ if not st.session_state['connected']:
                 p1 = st.text_input("Mot de passe", type="password")
                 p2 = st.text_input("Confirmez le mot de passe", type="password")
                 
-                if st.form_submit_button("🚀 Recevoir le code de validation"):
+                if st.form_submit_button("🚀 Recevoir le code"):
                     if p1 == p2 and len(p1) >= 6 and email_ins and nom_final:
                         code = random.randint(100000, 999999)
                         if send_validation_mail(email_ins, code):
                             st.session_state.update({'temp_id': email_ins, 'temp_pwd': p1, 'temp_name': nom_final, 'temp_type': u_role, 'temp_siret': siret_val, 'correct_code': code, 'verifying': True})
                             st.rerun()
-                        else: st.error("Erreur d'envoi du mail.")
-                    else: st.warning("Veuillez remplir tous les champs (MDP: 6 car. min).")
+                        else: st.error("Erreur mail.")
 
-# --- 8. ESPACE UTILISATEUR CONNECTÉ ---
+# --- 8. ESPACE APRÈS CONNEXION ---
 else:
     with st.sidebar:
         st.image(logo_url, width=100)
         st.write(f"### {st.session_state['user_name']}")
-        st.caption(f"Profil : {st.session_state['user_type']}")
         if st.button("🔌 Déconnexion"): st.session_state['connected'] = False; st.rerun()
 
     if st.session_state['user_type'] == "Particulier":
         st.title("💳 Effectuer un Règlement")
-        
         col_a, col_b = st.columns(2)
         with col_a:
             service = st.selectbox("Payer pour :", ["🎓 Frais de Scolarité", "🏠 Loyer", "💡 Facture EDG/SEG", "🛍️ Achat Commerçant"])
-            ref = st.text_input("Référence (N° Facture / Étudiant)")
-            montant = st.number_input("Montant à régler (GNF)", min_value=1000, step=500)
-            
+            montant = st.number_input("Montant (GNF)", min_value=1000)
         with col_b:
-            moyen = st.radio("Moyen de paiement :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
+            moyen = st.radio("Moyen :", ["Orange Money", "MTN MoMo", "Carte Visa"], horizontal=True)
             if moyen == "Carte Visa":
-                st.text_input("💳 Numéro de la carte")
-                c_col1, c_col2 = st.columns(2)
-                c_col1.text_input("📅 Expiration (MM/AA)")
-                c_col2.text_input("🔒 CVV", type="password")
+                st.text_input("💳 N° Carte")
+                st.text_input("📅 Exp (MM/AA)")
+                st.text_input("🔒 CVV", type="password")
             else:
-                st.text_input("📱 Numéro de téléphone à débiter", placeholder="622...")
-            
-            modalite = st.selectbox("Modalité de paiement", ["Comptant", "Échelonné (2 fois)", "Échelonné (3 fois)"])
+                st.text_input("📱 Numéro")
         
-        if st.button("💎 Valider le Règlement"):
-            with st.spinner('Validation de la transaction sécurisée...'):
+        if st.button("💎 Confirmer le Paiement"):
+            with st.spinner('Validation...'):
                 time.sleep(2)
-                st.balloons()
-                st.success(f"Paiement de {montant} GNF validé avec succès pour {service} !")
-                st.info(f"Un reçu a été envoyé à {st.session_state['user_id']}")
-
+                st.balloons(); st.success(f"Paiement de {montant} GNF réussi !")
     else:
-        st.title(f"💼 Dashboard Business")
-        st.metric("Total des fonds collectés", "0 GNF")
-        st.write("---")
-        st.subheader("Paramètres de réception")
-        st.selectbox("Canal de réception des fonds", ["Orange Money Business", "MTN MoMo Business", "Virement Bancaire"])
-        st.text_input("Coordonnées de réception (N° ou RIB)")
-        if st.button("Mettre à jour mes infos"): st.success("Informations enregistrées.")
+        st.title(f"💼 Dashboard : {st.session_state['user_name']}")
+        st.metric("Total encaissé", "0 GNF")
