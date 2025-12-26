@@ -14,7 +14,7 @@ st.set_page_config(
     layout="centered" 
 )
 
-# --- 2. CSS PERSONNALISÉ (Logo réduit et En-tête centré) ---
+# --- 2. CSS PERSONNALISÉ (Logo à 80px et En-tête centré) ---
 st.markdown(
     f"""
     <style>
@@ -25,12 +25,12 @@ st.markdown(
             margin: auto;
         }}
         
-        /* Centrage et taille du logo */
+        /* Centrage et taille du logo à 80px */
         .stImage > img {{
             display: block;
             margin-left: auto;
             margin-right: auto;
-            max-width: 120px; /* Taille réduite ici */
+            width: 80px; /* Taille fixée à 80px */
         }}
 
         /* Masquage des éléments Streamlit */
@@ -50,6 +50,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # --- 3. FONCTIONS TECHNIQUES (MAIL & DB) ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
 EMAIL_PASSWORD = "tyqlqacsgwpoeiin" 
@@ -90,8 +91,8 @@ def display_header():
     # Texte centré via HTML
     st.markdown(f"""
         <div style='text-align: center;'>
-            <h1 style='color:#ce1126; margin-bottom: 5px;'>KIKÉ SARÉ</h1>
-            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>La FinTech qui change votre quotidien</p>
+            <h1 style='color:#ce1126; margin-bottom: 5px;'>KikéSaré</h1>
+            <p style='color:#009460; font-weight:bold; font-size:20px; margin-bottom: 0;'>La FinTech qui change votre monde</p>
             <p style='color:#666; font-style: italic; font-size:14px;'>Payez vos mensualités en toute sécurité !</p>
             <hr style='border: 0.5px solid #eee; width: 100%; margin: 20px auto;'>
         </div>
