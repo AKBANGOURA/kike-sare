@@ -9,61 +9,9 @@ from email.message import EmailMessage
 logo_url = "https://raw.githubusercontent.com/AKBANGOURA/kike-sare/main/logo.png"
 
 st.set_page_config(
-    page_title="Kiké Saré",
+    page_title="KikéSaré",
     page_icon=logo_url,
     layout="centered" 
-)
-
-# --- 2. CSS AVANCÉ POUR LE CENTRAGE TOTAL ---
-st.markdown(
-    f"""
-    <style>
-        /* Centre le bloc principal sur l'écran */
-        .main .block-container {{
-            max-width: 600px;
-            padding-top: 2rem;
-            margin: auto;
-            text-align: center;
-        }}
-        
-        /* Centre les images */
-        .stImage > img {{
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }}
-
-        /* Centre les labels de texte (Email, Mot de passe) */
-        .stTextInput label, .stSelectbox label, .stRadio label {{
-            display: block;
-            text-align: center;
-            width: 100%;
-        }}
-
-        /* Centre les boutons et les arrondit */
-        div.stButton > button {{
-            width: 100%;
-            border-radius: 10px;
-            font-weight: bold;
-            margin: auto;
-            display: block;
-        }}
-
-        /* Masque les éléments inutiles */
-        header {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stAppDeployButton {{display:none;}}
-
-        /* Centre les boutons radio horizontalement */
-        [data-testid="stMarkdownContainer"] p {{
-            text-align: center;
-        }}
-        div[data-testid="stHorizontalBlock"] {{
-            justify-content: center;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True
 )
 
 # --- 3. FONCTION D'AFFICHAGE DU LOGO ET TITRES (CENTRÉS) ---
@@ -82,7 +30,6 @@ def display_header():
             <hr style='border: 0.5px solid #eee; width: 80%; margin: 20px auto;'>
         </div>
     """, unsafe_allow_html=True)
-
 
 # --- 1. CONFIGURATION MAIL ---
 EMAIL_SENDER = "bangourakallaa@gmail.com" 
